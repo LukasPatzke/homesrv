@@ -1,0 +1,104 @@
+version: "2.2"
+
+volumes:
+    ssl:
+        driver: local
+    keycloak:
+        driver: local
+
+services: 
+    traefik:
+        image: traefik
+        container_name: traefik
+        restart: always
+        ports:
+            - 80:80
+            - 443:443
+            - 8080:8080
+        networks: 
+            - proxy
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock:ro
+            - ssl:/letsencrypt
+        environment: 
+            - OVH_ENDPOINT=ovh-eu
+            - OVH_APPLICATION_KEY=$OVH_AK
+            - OVH_APPLICATION_SECRET=$OVH_AS
+            - OVH_CONSUMER_KEY=$OVH_CK
+        command: 
+            - "--log.level=DEBUG"
+            # dashboard
+            - "--api.dashboard=true"
+            # docker provider
+            - "--providers.docker=true"
+            - "--providers.docker.exposedbydefault=false"
+            # web http entrypoint
+            - "--entrypoints.web.address=:80"
+            - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+            - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+            # websecure https entrypoint
+            - "--entrypoints.websecure.address=:443"
+            - "--entrypoints.websecure.http.tls.certresolver=letsencrypt"
+            # letsencrypt cert resolver
+            - "--certificatesresolvers.letsencrypt.acme.dnschallenge=true"
+            - "--certificatesresolvers.letsencrypt.acme.dnschallenge.provider=ovh"
+            # - "--certificatesresolvers.letsencrypt.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
+            - "--certificatesresolvers.letsencrypt.acme.email=lukas@patzke.me"
+            - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.traefik.entrypoints=websecure"
+            - "traefik.http.routers.traefik.rule=Host(`traefik.int.patzke.me`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
+            - "traefik.http.routers.traefik.service=api@internal"
+            - "traefik.http.routers.traefik.middlewares=auth"
+    
+    forward-auth:
+        image: thomseddon/traefik-forward-auth:2
+        restart: always
+        container_name: forward-auth
+        networks: 
+            - proxy
+        environment: 
+            - PROVIDERS_OIDC_CLIENT_ID=forward-auth
+            - PROVIDERS_OIDC_CLIENT_SECRET=$KEYCLOAK_CLIENT_SECRET
+            - PROVIDERS_OIDC_ISSUER_URL=https://sso.int.patzke.me/auth/realms/patzke.me
+            - DEFAULT_PROVIDER=oidc
+            - SECRET=$COOKIE_SECRET
+            - AUTH_HOST=forward.sso.int.patzke.me
+            - COOKIE_DOMAIN=patzke.me
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.forward-auth.rule=Host(`forward.sso.int.patzke.me`)"
+            - "traefik.http.routers.forward-auth.entrypoints=websecure"
+            - "traefik.http.services.traefik-forward-auth.loadbalancer.server.port=4181"
+            - "traefik.http.routers.forward-auth.middlewares=auth"
+            # auth middleware
+            - "traefik.http.middlewares.auth.forwardauth.address=http://forward-auth:4181"
+            - "traefik.http.middlewares.auth.forwardauth.authResponseHeaders=X-Forwarded-User"
+            - "traefik.http.middlewares.auth.forwardAuth.trustForwardHeader=true"
+            
+
+    keycloak:
+        image: jboss/keycloak
+        restart: always
+        container_name: keycloak
+        networks: 
+            - proxy
+        volumes: 
+            - keycloak:/opt/jboss/keycloak/standalone
+            - ./keycloak_theme:/opt/jboss/keycloak/themes/custom
+        environment: 
+            - DB_VENDOR=h2
+            - KEYCLOAK_HOSTNAME=sso.int.patzke.me
+            - PROXY_ADDRESS_FORWARDING=true
+            - KEYCLOAK_USER=admin
+            - KEYCLOAK_PASSWORD
+        labels: 
+            - "traefik.enable=true"
+            - "traefik.http.routers.keycloak.rule=Host(`sso.int.patzke.me`)"
+            - "traefik.http.routers.keycloak.entrypoints=websecure"
+
+
+networks:
+    proxy:
+        external: true

@@ -1,0 +1,62 @@
+version: "2"
+
+volumes:
+    portainer:
+        driver: local
+    heimdall:
+        driver: local
+
+services:
+    portainer:
+        image: portainer/portainer
+        restart: always
+        container_name: portainer
+        volumes:
+            - '/var/run/docker.sock:/var/run/docker.sock'
+            - 'portainer:/data'
+        ports:
+            - 9000:9000
+        networks: 
+            - proxy
+        command: --no-auth
+        labels: 
+            - "traefik.enable=true"
+            - "traefik.docker.network=proxy"
+            - "traefik.http.routers.portainer.rule=Host(`portainer.int.patzke.me`)"
+            - "traefik.http.services.portainer.loadbalancer.server.port=9000"
+            - "traefik.http.routers.portainer.entrypoints=websecure"
+            - "traefik.http.routers.portainer.middlewares=auth"
+           
+    watchtower:
+        image: containrrr/watchtower
+        restart: always
+        container_name: watchtower
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+            - /root/.docker/config.json:/config.json
+            - /etc/timezone:/etc/timezone:ro
+        command: --schedule "0 0 3 * * *"
+
+    heimdall:
+        image: linuxserver/heimdall
+        container_name: heimdall
+        restart: unless-stopped
+        networks: 
+            - proxy
+        environment:
+            - PUID=1000
+            - PGID=1000
+            - TZ=Europe/Berlin
+        volumes:
+            - heimdall:/config
+        labels: 
+            - "traefik.enable=true"
+            - "traefik.docker.network=proxy"
+            - "traefik.http.routers.heimdall.rule=Host(`heimdall.int.patzke.me`)"
+            - "traefik.http.services.heimdall.loadbalancer.server.port=80"
+            - "traefik.http.routers.heimdall.entrypoints=websecure"
+            - "traefik.http.routers.heimdall.middlewares=auth"
+
+networks:
+    proxy:
+        external: true
