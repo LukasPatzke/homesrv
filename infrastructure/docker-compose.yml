@@ -1,10 +1,8 @@
-version: "2"
+version: "3.7"
 
 volumes:
     portainer:
-        driver: local
     heimdall:
-        driver: local
 
 services:
     portainer:
@@ -22,7 +20,7 @@ services:
         labels: 
             - "traefik.enable=true"
             - "traefik.docker.network=proxy"
-            - "traefik.http.routers.portainer.rule=Host(`portainer.int.patzke.me`)"
+            - "traefik.http.routers.portainer.rule=Host(`portainer.l3s.io`)"
             - "traefik.http.services.portainer.loadbalancer.server.port=9000"
             - "traefik.http.routers.portainer.entrypoints=websecure"
             - "traefik.http.routers.portainer.middlewares=auth"
@@ -52,10 +50,25 @@ services:
         labels: 
             - "traefik.enable=true"
             - "traefik.docker.network=proxy"
-            - "traefik.http.routers.heimdall.rule=Host(`heimdall.int.patzke.me`)"
+            - "traefik.http.routers.heimdall.rule=Host(`l3s.io`)"
             - "traefik.http.services.heimdall.loadbalancer.server.port=80"
             - "traefik.http.routers.heimdall.entrypoints=websecure"
             - "traefik.http.routers.heimdall.middlewares=auth"
+
+    homer:
+        image: b4bz/homer
+        container_name: homer
+        restart: always
+        networks: 
+            - proxy
+        volumes: 
+            - ./homer:/www/assets
+        labels: 
+            - "traefik.enable=true"
+            - "traefik.docker.network=proxy"
+            - "traefik.http.routers.homer.rule=Host(`homer.l3s.io`)"
+            - "traefik.http.routers.homer.entrypoints=websecure"
+            - "traefik.http.routers.homer.middlewares=auth"
 
 networks:
     proxy:

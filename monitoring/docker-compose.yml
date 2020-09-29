@@ -1,0 +1,115 @@
+version: "3.7"
+
+volumes:
+    grafana:
+    prometheus:
+    loki:
+
+services: 
+    grafana:
+        image: grafana/grafana
+        container_name: grafana
+        restart: always
+        user: "1000"
+        networks:
+            - proxy
+            - default
+        volumes: 
+            - grafana:/var/lib/grafana
+        environment: 
+            GF_SERVER_ROOT_URL: https://grafana.l3s.io/
+            GF_SERVER_DOMAIN: grafana.l3s.io
+            GF_SESSION_COOKIE_SECURE: "true"
+            GF_USERS_AUTO_ASSIGN_ORG: "true"
+            GF_AUTH_ANONYMOUS_ENABLED: "false"
+            GF_AUTH_BASIC_ENABLED: "false"
+            GF_AUTH_PROXY_ENABLED: "false"
+            GF_AUTH_PROXY_HEADER_NAME: "X-Forwarded-User"
+            GF_AUTH_PROXY_HEADER_PROPERTY: email
+            GF_AUTH_PROXY_AUTO_SIGN_UP: "true"
+            # GF_AUTH_SIGNOUT_REDIRECT_URL: "https://sso.int.patzke.me/auth/realms/patzke.me/protocol/openid-connect/logout?redirect_uri=https%3A%2F%2Fforward.sso.int.patzke.me%2F_oauth%2Flogout"
+            GF_AUTH_GENERIC_OAUTH_ENABLED: "true"
+            GF_AUTH_GENERIC_OAUTH_ALLOW_SIGN_UP: "true"
+            GF_AUTH_GENERIC_OAUTH_NAME: "Keycloak"
+            GF_AUTH_GENERIC_OAUTH_CLIENT_ID: "grafana"
+            GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET: $GRAFANA_CLIENT_SECRET
+            GF_AUTH_GENERIC_OAUTH_SCOPES: openid profile email
+            GF_AUTH_GENERIC_OAUTH_AUTH_URL: "https://sso.l3s.io/auth/realms/l3s/protocol/openid-connect/auth"
+            GF_AUTH_GENERIC_OAUTH_TOKEN_URL: "https://sso.l3s.io/auth/realms/l3s/protocol/openid-connect/token"
+            GF_AUTH_GENERIC_OAUTH_API_URL: "https://sso.l3s.io/auth/realms/l3s/protocol/openid-connect/userinfo"
+            GF_AUTH_SIGNOUT_REDIRECT_URL: "https://sso.l3s.io/auth/realms/l3s/protocol/openid-connect/logout?redirect_uri=https%3A%2F%2Fgrafana.l3s.io"
+        labels: 
+            - "traefik.enable=true"
+            - "traefik.docker.network=proxy"
+            - "traefik.http.routers.grafana.rule=Host(`grafana.l3s.io`)"
+            - "traefik.http.routers.grafana.entrypoints=websecure"
+            # - "traefik.http.routers.grafana.middlewares=auth"
+    
+    prometheus:
+        image: prom/prometheus
+        container_name: prometheus
+        restart: always
+        networks: 
+            - proxy
+            - default
+        volumes: 
+            - prometheus:/prometheus
+            - ./prometheus.yml:/etc/prometheus/prometheus.yml
+        labels: 
+            - "traefik.enable=true"
+            - "traefik.docker.network=proxy"
+            - "traefik.http.routers.prometheus.rule=Host(`prometheus.l3s.io`)"
+            - "traefik.http.routers.prometheus.entrypoints=websecure"
+            - "traefik.http.routers.prometheus.middlewares=auth"
+
+    cadvisor:
+        image: gcr.io/google-containers/cadvisor:latest
+        container_name: cadvisor
+        restart: always
+        networks: 
+            - default
+        volumes:
+        - /:/rootfs:ro
+        - /var/run:/var/run:rw
+        - /sys:/sys:ro
+        - /var/lib/docker/:/var/lib/docker:ro
+        command:
+            - '--housekeeping_interval=10s'
+            - '--docker_only'
+
+    node-exporter:
+        image: prom/node-exporter:latest
+        container_name: node-exporter
+        restart: unless-stopped
+        networks: 
+            - default
+        volumes:
+            - /etc/localtime:/etc/localtime:ro
+            - /etc/timezone:/etc/timezone:ro
+            - /proc:/host/proc:ro
+            - /sys:/host/sys:ro
+            - /:/rootfs:ro
+        command:
+            - '--path.procfs=/host/proc'
+            - '--path.sysfs=/host/sys'
+            - '--path.rootfs=/rootfs'
+            - '--collector.filesystem.ignored-mount-points="^(/rootfs|/host|)/(sys|proc|dev|host|etc)($$|/)"'
+            - '--collector.filesystem.ignored-fs-types="^(sys|proc|auto|cgroup|devpts|ns|au|fuse\.lxc|mqueue)(fs|)$$"'
+
+    loki:
+        image: grafana/loki
+        container_name: loki
+        restart: always
+        ports:
+            - 3100:3100
+        networks: 
+            - default
+        volumes: 
+            - loki:/loki
+            - ./loki.yml:/etc/loki/loki.yml
+        command: -config.file=/etc/loki/loki.yml
+
+networks: 
+    proxy:
+        external: true
+    default:

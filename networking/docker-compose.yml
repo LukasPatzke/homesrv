@@ -1,10 +1,10 @@
-version: "2.2"
+version: "3.7"
 
 volumes:
     ssl:
-        driver: local
     keycloak:
-        driver: local
+    kong:
+    konga:
 
 services: 
     traefik:
@@ -14,24 +14,33 @@ services:
         ports:
             - 80:80
             - 443:443
-            - 8080:8080
         networks: 
             - proxy
         volumes:
             - /var/run/docker.sock:/var/run/docker.sock:ro
             - ssl:/letsencrypt
+            - ./traefik:/traefik
         environment: 
             - OVH_ENDPOINT=ovh-eu
             - OVH_APPLICATION_KEY=$OVH_AK
             - OVH_APPLICATION_SECRET=$OVH_AS
             - OVH_CONSUMER_KEY=$OVH_CK
         command: 
+            # logs
             - "--log.level=DEBUG"
+            - "--accesslog=true"
+            # metrics
+            - "--metrics.prometheus=true"
+            - "--entryPoints.metrics.address=:8082"
+            - "--metrics.prometheus.entryPoint=metrics"
             # dashboard
             - "--api.dashboard=true"
             # docker provider
             - "--providers.docker=true"
             - "--providers.docker.exposedbydefault=false"
+            # file provider
+            - "--providers.file.filename=/traefik/dynamic.yml"
+            - "--providers.file.watch=true"
             # web http entrypoint
             - "--entrypoints.web.address=:80"
             - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
@@ -39,18 +48,22 @@ services:
             # websecure https entrypoint
             - "--entrypoints.websecure.address=:443"
             - "--entrypoints.websecure.http.tls.certresolver=letsencrypt"
+            - "--entrypoints.websecure.http.tls.options=modern@file"
             # letsencrypt cert resolver
             - "--certificatesresolvers.letsencrypt.acme.dnschallenge=true"
             - "--certificatesresolvers.letsencrypt.acme.dnschallenge.provider=ovh"
             # - "--certificatesresolvers.letsencrypt.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
+            - "--certificatesresolvers.letsencrypt.acme.dnschallenge.resolvers=213.251.188.146:53"
             - "--certificatesresolvers.letsencrypt.acme.email=lukas@patzke.me"
             - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
         labels:
             - "traefik.enable=true"
             - "traefik.http.routers.traefik.entrypoints=websecure"
-            - "traefik.http.routers.traefik.rule=Host(`traefik.int.patzke.me`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
+            - "traefik.http.routers.traefik.rule=Host(`traefik.l3s.io`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
             - "traefik.http.routers.traefik.service=api@internal"
             - "traefik.http.routers.traefik.middlewares=auth"
+            # local ips
+            - "traefik.http.middlewares.local-ip.ipwhitelist.sourcerange=192.168.178.1/24"
     
     forward-auth:
         image: thomseddon/traefik-forward-auth:2
@@ -61,14 +74,15 @@ services:
         environment: 
             - PROVIDERS_OIDC_CLIENT_ID=forward-auth
             - PROVIDERS_OIDC_CLIENT_SECRET=$KEYCLOAK_CLIENT_SECRET
-            - PROVIDERS_OIDC_ISSUER_URL=https://sso.int.patzke.me/auth/realms/patzke.me
+            - PROVIDERS_OIDC_ISSUER_URL=https://sso.l3s.io/auth/realms/l3s
             - DEFAULT_PROVIDER=oidc
             - SECRET=$COOKIE_SECRET
-            - AUTH_HOST=forward.sso.int.patzke.me
-            - COOKIE_DOMAIN=patzke.me
+            - AUTH_HOST=forward.sso.l3s.io
+            - COOKIE_DOMAIN=l3s.io
+            - LIFETIME=900
         labels:
             - "traefik.enable=true"
-            - "traefik.http.routers.forward-auth.rule=Host(`forward.sso.int.patzke.me`)"
+            - "traefik.http.routers.forward-auth.rule=Host(`forward.sso.l3s.io`)"
             - "traefik.http.routers.forward-auth.entrypoints=websecure"
             - "traefik.http.services.traefik-forward-auth.loadbalancer.server.port=4181"
             - "traefik.http.routers.forward-auth.middlewares=auth"
@@ -86,19 +100,91 @@ services:
             - proxy
         volumes: 
             - keycloak:/opt/jboss/keycloak/standalone
-            - ./keycloak_theme:/opt/jboss/keycloak/themes/custom
+            - ./material-keycloak-theme/material:/opt/jboss/keycloak/themes/material
+            - ./keycloak-startup.cli:/opt/jboss/startup-scripts/startup.cli
         environment: 
             - DB_VENDOR=h2
-            - KEYCLOAK_HOSTNAME=sso.int.patzke.me
+            - KEYCLOAK_HOSTNAME=sso.l3s.io
             - PROXY_ADDRESS_FORWARDING=true
             - KEYCLOAK_USER=admin
-            - KEYCLOAK_PASSWORD
+            - KEYCLOAK_STATISTICS=all
+            # - KEYCLOAK_PASSWORD
         labels: 
             - "traefik.enable=true"
-            - "traefik.http.routers.keycloak.rule=Host(`sso.int.patzke.me`)"
+            - "traefik.http.routers.keycloak.rule=Host(`sso.l3s.io`) && (PathPrefix(`/auth/realms/l3s/`) || PathPrefix(`/auth/resources/`))"
             - "traefik.http.routers.keycloak.entrypoints=websecure"
+            - "traefik.http.routers.keycloak-admin.rule=Host(`sso.l3s.io`)"
+            - "traefik.http.routers.keycloak-admin.entrypoints=websecure"
+            - "traefik.http.routers.keycloak-admin.middlewares=local-ip"
+    
 
+    kong-db:
+        image: postgres
+        container_name: kong-db
+        restart: always
+        networks: 
+            - kong
+        volumes:
+            - kong:/var/lib/postgresql/data
+        environment: 
+            - POSTGRES_DB=kong
+            - POSTGRES_USER=kong
+            - POSTGRES_PASSWORD=$KONG_DB_PASSWORD
+
+    kong:
+        image: kong
+        restart: always
+        container_name: kong
+        networks: 
+            - proxy
+            - kong
+        environment: 
+            - KONG_DATABASE=postgres
+            - KONG_PG_HOST=kong-db
+            - KONG_PG_PORT=5432
+            - KONG_PG_DATABASE=kong
+            - KONG_PG_USER=kong
+            - KONG_PG_PASSWORD=${KONG_DB_PASSWORD}
+            - KONG_PROXY_ACCESS_LOG=/dev/stdout
+            - KONG_ADMIN_ACCESS_LOG=/dev/stdout
+            - KONG_PROXY_ERROR_LOG=/dev/stderr
+            - KONG_ADMIN_ERROR_LOG=/dev/stderr
+            - KONG_ADMIN_LISTEN=0.0.0.0:8001
+            - KONG_TRUSTED_IPS=172.21.0.0/16
+            - KONG_REAL_IP_HEADER=X-Forwarded-For
+        labels:
+            - "traefik.enable=true"
+            - "traefik.docker.network=proxy"
+            - "traefik.http.routers.kong.rule=Host(`api.l3s.io`)"
+            - "traefik.http.routers.kong.entrypoints=websecure"
+            - "traefik.http.services.kong.loadbalancer.server.port=8000"
+  
+    konga:
+        image: pantsel/konga
+        restart: always
+        container_name: konga
+        networks: 
+            - proxy
+            - kong
+        volumes: 
+            - konga:/app/kongadata
+        environment: 
+            - HOST=0.0.0.0
+            - PORT=1337
+            - TOKEN_SECRET=$KONGA_SECRET
+            - NODE_ENV=production
+            - KONGA_HOOK_TIMEOUT=120000
+            - NO_AUTH=true
+            - BASE_URL=konga.l3s.io
+        labels: 
+            - "traefik.enable=true"
+            - "traefik.docker.network=proxy"
+            - "traefik.http.routers.konga.rule=Host(`konga.l3s.io`)"
+            - "traefik.http.routers.konga.entrypoints=websecure"
+            - "traefik.http.routers.konga.middlewares=auth"
+            - "traefik.http.services.konga.loadbalancer.server.port=1337"
 
 networks:
     proxy:
         external: true
+    kong:

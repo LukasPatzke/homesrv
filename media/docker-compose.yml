@@ -1,0 +1,82 @@
+version: "3.7"
+
+volumes:
+  sabnzbd:
+  radarr:
+  plex:
+
+services:
+  plex:
+    image: linuxserver/plex
+    container_name: plex
+    networks: 
+      - proxy
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - VERSION=docker
+      - UMASK_SET=022 #optional
+      - PLEX_CLAIM=claim-qdhxhYGDyVCW1MT9i51R #optional
+    volumes:
+      - plex:/config
+      - ./movies:/movies
+    restart: unless-stopped
+    labels: 
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.plex.rule=Host(`plex.l3s.io`)"
+      - "traefik.http.routers.plex.entrypoints=websecure"
+      - "traefik.http.routers.plex.middlewares=auth"
+      - "traefik.http.services.plex.loadbalancer.server.port=32400"
+
+  radarr:
+    image: linuxserver/radarr
+    container_name: radarr
+    networks: 
+      - proxy
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/London
+      - UMASK_SET=022 #optional
+    volumes:
+      - radarr:/config
+      - ./movies:/movies
+      - ./downloads/downloads:/downloads
+    restart: unless-stopped
+    labels: 
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.radarr.rule=Host(`radarr.l3s.io`)"
+      - "traefik.http.routers.radarr.entrypoints=websecure"
+      - "traefik.http.routers.radarr.middlewares=auth"
+      - "traefik.http.services.radarr.loadbalancer.server.port=7878"
+
+  sabnzbd:
+    image: linuxserver/sabnzbd
+    container_name: sabnzbd
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/London
+    ports:
+      - 8080:8080
+    volumes:
+      - sabnzbd:/config
+      - ./downloads/downloads:/downloads
+      - ./downloads/incomplete:/incomplete-downloads #optional
+    restart: unless-stopped
+    labels: 
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.sabnzbd.rule=Host(`sabnzbd.l3s.io`)"
+      - "traefik.http.routers.sabnzbd.entrypoints=websecure"
+      - "traefik.http.routers.sabnzbd.middlewares=auth"
+      - "traefik.http.services.sabnzbd.loadbalancer.server.port=8080"
+
+
+networks:
+  proxy:
+      external: true
+  default:
+  
