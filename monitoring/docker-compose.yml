@@ -38,6 +38,11 @@ services:
             GF_AUTH_GENERIC_OAUTH_TOKEN_URL: "https://sso.l3s.io/auth/realms/l3s/protocol/openid-connect/token"
             GF_AUTH_GENERIC_OAUTH_API_URL: "https://sso.l3s.io/auth/realms/l3s/protocol/openid-connect/userinfo"
             GF_AUTH_SIGNOUT_REDIRECT_URL: "https://sso.l3s.io/auth/realms/l3s/protocol/openid-connect/logout?redirect_uri=https%3A%2F%2Fgrafana.l3s.io"
+            GF_SMTP_ENABLED: "true"
+            GF_SMTP_HOST: hosted.mailcow.de:465
+            GF_SMTP_USER: grafana@patzke.me
+            GF_SMTP_PASSWORD: $SMTP_PASSWORD
+            GF_SMTP_FROM_ADDRESS: grafana@patzke.me
         labels: 
             - "traefik.enable=true"
             - "traefik.docker.network=proxy"
