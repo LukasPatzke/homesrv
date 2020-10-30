@@ -3,6 +3,7 @@ version: "3.7"
 volumes:
     portainer:
     heimdall:
+    homepage:
 
 services:
     portainer:
@@ -50,26 +51,30 @@ services:
         labels: 
             - "traefik.enable=true"
             - "traefik.docker.network=proxy"
-            - "traefik.http.routers.heimdall.rule=Host(`l3s.io`)"
+            - "traefik.http.routers.heimdall.rule=Host(`heimdall.l3s.io`)"
             - "traefik.http.services.heimdall.loadbalancer.server.port=80"
             - "traefik.http.routers.heimdall.entrypoints=websecure"
             - "traefik.http.routers.heimdall.middlewares=auth"
-
-    homer:
-        image: b4bz/homer
-        container_name: homer
+    
+    homepage:
+        image: lukaspatzke/homepage:edge
+        container_name: homepage
         restart: always
         networks: 
             - proxy
-        volumes: 
-            - ./homer:/www/assets
+        volumes:
+            - homepage:/data
+        environment:
+            - TZ=Europe/Berlin
+            - DB_CONN=sqlite:////data/db.sqlite
+            - SIGNOUT_REDIRECT_URL=https://sso.l3s.io/auth/realms/l3s/protocol/openid-connect/logout?redirect_uri=https%3A%2F%2Fforward.sso.l3s.io%2F_oauth%2Flogout
         labels: 
             - "traefik.enable=true"
             - "traefik.docker.network=proxy"
-            - "traefik.http.routers.homer.rule=Host(`homer.l3s.io`)"
-            - "traefik.http.routers.homer.entrypoints=websecure"
-            - "traefik.http.routers.homer.middlewares=auth"
-
+            - "traefik.http.routers.homepage.rule=Host(`l3s.io`)"
+            - "traefik.http.routers.homepage.entrypoints=websecure"
+            - "traefik.http.routers.homepage.middlewares=auth"
+        
 networks:
     proxy:
         external: true
