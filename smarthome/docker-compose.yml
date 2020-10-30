@@ -1,0 +1,106 @@
+version: "3.7"
+
+volumes:
+    node-red:
+    mosquitto:
+    deconz:
+    ambienthue:
+
+services:
+    ambienthue:
+        image: lukaspatzke/ambienthue:latest
+        restart: always
+        container_name: ambienthue
+        networks:
+          - proxy
+        volumes:
+          - ambienthue:/data
+        environment:
+          - TZ=Europe/Berlin
+          - DB_CONN=sqlite:////data/db.sqlite
+        command: --log-level debug
+        labels: 
+          - "traefik.enable=true"
+          - "traefik.docker.network=proxy"
+          - "traefik.http.routers.ambienthue.rule=Host(`ambienthue.l3s.io`)"
+          - "traefik.http.services.ambienthue.loadbalancer.server.port=8080"
+          - "traefik.http.routers.ambienthue.entrypoints=websecure"
+          - "traefik.http.routers.ambienthue.middlewares=local-ip"
+
+    node-red:
+        image: nodered/node-red:latest
+        container_name: node-red
+        environment:
+          - TZ=Europe/Berlin
+        networks:
+          - proxy
+          - default
+        volumes:
+          - node-red:/data
+        labels: 
+          - "traefik.enable=true"
+          - "traefik.docker.network=proxy"
+          - "traefik.http.routers.node-red.rule=Host(`node-red.l3s.io`)"
+          - "traefik.http.services.node-red.loadbalancer.server.port=1880"
+          - "traefik.http.routers.node-red.entrypoints=websecure"
+          - "traefik.http.routers.node-red.middlewares=auth"
+
+    mosquitto:
+        image: eclipse-mosquitto
+        container_name: mosquitto
+        networks: 
+          - default
+          - proxy
+        ports:
+          - 1883:1883
+          - 9001:9001
+        volumes: 
+          - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+          - mosquitto:/mosquitto/data
+        labels: 
+          - "traefik.enable=true"
+          - "traefik.docker.network=proxy"
+          - "traefik.http.routers.mosquitto.rule=Host(`mosquitto.l3s.io`)"
+          - "traefik.http.services.mosquitto.loadbalancer.server.port=9001"
+          - "traefik.http.routers.mosquitto.entrypoints=websecure"
+          # - "traefik.http.routers.mosquitto.middlewares=auth"
+          - "traefik.http.routers.mosquitto.middlewares=local-ip"
+
+    deconz:
+      image: marthoc/deconz
+      container_name: deconz
+      networks: 
+        - proxy
+      volumes: 
+        - /etc/localtime:/etc/localtime:ro
+        - deconz:/root/.local/share/dresden-elektronik/deCONZ
+      devices:
+        - /dev/ttyACM0
+      environment: 
+        - DECONZ_DEVICE=/dev/ttyACM0
+        - DECONZ_VNC_MODE=1
+      labels: 
+        - "traefik.enable=true"
+        - "traefik.docker.network=proxy"
+        - "traefik.http.routers.deconz.rule=Host(`deconz.l3s.io`)"
+        - "traefik.http.routers.deconz.entrypoints=websecure"
+        - "traefik.http.routers.deconz.middlewares=local-ip"
+        - "traefik.http.routers.deconz.service=deconz"
+        - "traefik.http.services.deconz.loadbalancer.server.port=80"
+
+        - "traefik.http.routers.deconz-ws.rule=Host(`ws.deconz.l3s.io`)"
+        - "traefik.http.routers.deconz-ws.entrypoints=websecure"
+        - "traefik.http.routers.deconz-ws.middlewares=local-ip"
+        - "traefik.http.routers.deconz-ws.service=deconz-ws"
+        - "traefik.http.services.deconz-ws.loadbalancer.server.port=443"
+
+        - "traefik.http.routers.deconz-vnc.rule=Host(`vnc.deconz.l3s.io`)"
+        - "traefik.http.routers.deconz-vnc.entrypoints=websecure"
+        - "traefik.http.routers.deconz-vnc.middlewares=local-ip"
+        - "traefik.http.routers.deconz-vnc.service=deconz-vnc"
+        - "traefik.http.services.deconz-vnc.loadbalancer.server.port=5900"
+
+networks:
+    proxy:
+        external: true
+    default:
