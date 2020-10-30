@@ -7,7 +7,7 @@ volumes:
 
 services:
     portainer:
-        image: portainer/portainer
+        image: portainer/portainer-ce
         restart: always
         container_name: portainer
         volumes:
@@ -17,7 +17,6 @@ services:
             - 9000:9000
         networks: 
             - proxy
-        command: --no-auth
         labels: 
             - "traefik.enable=true"
             - "traefik.docker.network=proxy"
