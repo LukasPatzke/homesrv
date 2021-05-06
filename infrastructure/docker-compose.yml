@@ -29,6 +29,14 @@ services:
         image: containrrr/watchtower
         restart: always
         container_name: watchtower
+        environment: 
+            - WATCHTOWER_MONITOR_ONLY=true
+            - WATCHTOWER_NOTIFICATION_EMAIL_FROM=Watchtower
+            - WATCHTOWER_NOTIFICATION_EMAIL_TO=lukas@patzke.me
+            - WATCHTOWER_NOTIFICATION_EMAIL_SERVER=hosted.mailcow.de
+            - WATCHTOWER_NOTIFICATION_EMAIL_SERVER_PORT=465
+            - WATCHTOWER_NOTIFICATION_EMAIL_SERVER_USER=watchtower@patzke.me
+            - WATCHTOWER_NOTIFICATION_EMAIL_SERVER_PASSWORD=$WATCHTOWER_NOTIFICATION_EMAIL_SERVER_PASSWORD
         volumes:
             - /var/run/docker.sock:/var/run/docker.sock
             - /etc/timezone:/etc/timezone:ro
