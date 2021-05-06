@@ -75,6 +75,8 @@ services:
             - "traefik.http.routers.local-api.service=api@internal"
             # local ips
             - "traefik.http.middlewares.local-ip.ipwhitelist.sourcerange=172.16.0.0/12, 192.168.0.0/16, 10.2.0.0/16"
+        extra_hosts:
+            - host.docker.internal:172.21.0.1
 
     forward-auth:
         image: thomseddon/traefik-forward-auth:2
