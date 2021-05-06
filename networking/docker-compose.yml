@@ -102,7 +102,7 @@ services:
             
 
     keycloak:
-        image: jboss/keycloak
+        image: jboss/keycloak:12.0.0
         restart: always
         container_name: keycloak
         networks: 
@@ -110,7 +110,7 @@ services:
         volumes: 
             - keycloak:/opt/jboss/keycloak/standalone
             - ./material-keycloak-theme/material:/opt/jboss/keycloak/themes/material
-            - ./keycloak-startup.cli:/opt/jboss/startup-scripts/startup.cli
+            # - ./keycloak-startup.cli:/opt/jboss/startup-scripts/startup.cli
         environment: 
             - DB_VENDOR=h2
             - KEYCLOAK_HOSTNAME=sso.l3s.io
