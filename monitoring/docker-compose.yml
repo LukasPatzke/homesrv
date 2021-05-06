@@ -123,6 +123,20 @@ services:
             - ./loki.yml:/etc/loki/loki.yml
         command: -config.file=/etc/loki/loki.yml
 
+    vector:
+        image: timberio/vector:0.12.X-debian
+        container_name: vector
+        restart: always
+        ports: 
+            - 514:514/tcp
+            - 514:514/udp
+        networks: 
+            - default
+        volumes: 
+            - /etc/localtime:/etc/localtime:ro
+            - /etc/timezone:/etc/timezone:ro
+            - ./vector.toml:/etc/vector/vector.toml
+
 networks: 
     proxy:
         external: true

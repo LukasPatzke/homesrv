@@ -1,0 +1,17 @@
+timezone = "Europe/Berlin"
+
+[sources.syslog]
+type = "syslog"
+address = "0.0.0.0:514"
+mode = "udp"
+
+[sinks.out]
+type = "loki"
+inputs = [ "syslog" ]
+endpoint = "http://loki:3100"
+encoding.codec = "json"
+remove_timestamp = true # optional, default
+  [sinks.out.labels]
+  forwarder = "vector"
+  ip = "{{ source_ip }}"
+  host = "{{ hostname }}"
