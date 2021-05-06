@@ -111,14 +111,17 @@ services:
             - '--collector.filesystem.ignored-fs-types="^(sys|proc|auto|cgroup|devpts|ns|au|fuse\.lxc|mqueue)(fs|)$$"'
 
     loki:
-        image: grafana/loki
+        image: grafana/loki:2.2.1
         container_name: loki
         restart: always
         ports:
             - 3100:3100
         networks: 
             - default
+            - proxy
         volumes: 
+            - /etc/localtime:/etc/localtime:ro
+            - /etc/timezone:/etc/timezone:ro
             - loki:/loki
             - ./loki.yml:/etc/loki/loki.yml
         command: -config.file=/etc/loki/loki.yml
