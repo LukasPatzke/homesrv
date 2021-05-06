@@ -14,6 +14,7 @@ services:
         ports:
             - 80:80
             - 443:443
+            - 8000:8000
         networks: 
             - proxy
         volumes:
@@ -49,6 +50,8 @@ services:
             - "--entrypoints.websecure.address=:443"
             - "--entrypoints.websecure.http.tls.certresolver=letsencrypt"
             - "--entrypoints.websecure.http.tls.options=modern@file"
+            # local api http entrypoint
+            - "--entrypoints.local-api.address=:8000"
             # letsencrypt cert resolver
             - "--certificatesresolvers.letsencrypt.acme.dnschallenge=true"
             - "--certificatesresolvers.letsencrypt.acme.dnschallenge.provider=ovh"
@@ -62,6 +65,10 @@ services:
             - "traefik.http.routers.traefik.rule=Host(`traefik.l3s.io`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
             - "traefik.http.routers.traefik.service=api@internal"
             - "traefik.http.routers.traefik.middlewares=auth"
+
+            - "traefik.http.routers.local-api.entrypoints=local-api"
+            - "traefik.http.routers.local-api.rule=PathPrefix(`/api`)"
+            - "traefik.http.routers.local-api.service=api@internal"
             # local ips
             - "traefik.http.middlewares.local-ip.ipwhitelist.sourcerange=192.168.178.1/24"
     
