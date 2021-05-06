@@ -74,8 +74,8 @@ services:
             - "traefik.http.routers.local-api.rule=PathPrefix(`/api`)"
             - "traefik.http.routers.local-api.service=api@internal"
             # local ips
-            - "traefik.http.middlewares.local-ip.ipwhitelist.sourcerange=192.168.178.1/24"
-    
+            - "traefik.http.middlewares.local-ip.ipwhitelist.sourcerange=172.16.0.0/12, 192.168.0.0/16, 10.2.0.0/16"
+
     forward-auth:
         image: thomseddon/traefik-forward-auth:2
         restart: always
