@@ -88,7 +88,10 @@ services:
             - SECRET=$COOKIE_SECRET
             - AUTH_HOST=forward.sso.l3s.io
             - COOKIE_DOMAIN=l3s.io
-            - LIFETIME=900
+            - LIFETIME=3600
+            - LOG_LEVEL=debug
+            - TZ=Europe/Berlin
+            - LOGOUT_REDIRECT=https://l3s.io
         labels:
             - "traefik.enable=true"
             - "traefik.http.routers.forward-auth.rule=Host(`forward.sso.l3s.io`)"
