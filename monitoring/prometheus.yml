@@ -49,3 +49,7 @@ scrape_configs:
     scrape_interval: 30s
     static_configs:
     - targets: ['unifi-poller:9130']
+  - job_name: 'flora'
+    scrape_interval: 10s
+    static_configs:
+    - targets: ['10.2.0.173:8000']
