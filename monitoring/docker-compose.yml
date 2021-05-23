@@ -3,6 +3,7 @@ version: "3.7"
 volumes:
     grafana:
     prometheus:
+    prometheus-archive:
     loki:
 
 services: 
@@ -58,7 +59,7 @@ services:
         container_name: grafana-renderer
         environment:
             ENABLE_METRICS: 'true'
-
+    
     prometheus:
         image: prom/prometheus
         container_name: prometheus
@@ -75,6 +76,26 @@ services:
             - "traefik.http.routers.prometheus.rule=Host(`prometheus.l3s.io`)"
             - "traefik.http.routers.prometheus.entrypoints=websecure"
             - "traefik.http.routers.prometheus.middlewares=auth"
+
+    prometheus-archive:
+        image: prom/prometheus
+        container_name: prometheus-archive
+        restart: always
+        networks: 
+            - proxy
+            - default
+        volumes: 
+            - prometheus-archive:/prometheus
+            - ./prometheus-archive.yml:/etc/prometheus/prometheus-archive.yml
+        command: 
+            - '--config.file=/etc/prometheus/prometheus-archive.yml'
+            - '--storage.tsdb.retention.time=365d'
+        labels: 
+            - "traefik.enable=true"
+            - "traefik.docker.network=proxy"
+            - "traefik.http.routers.prometheus-archive.rule=Host(`archive.prometheus.l3s.io`)"
+            - "traefik.http.routers.prometheus-archive.entrypoints=websecure"
+            - "traefik.http.routers.prometheus-archive.middlewares=auth"
 
     cadvisor:
         image: gcr.io/google-containers/cadvisor:latest
