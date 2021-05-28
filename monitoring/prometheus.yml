@@ -53,3 +53,6 @@ scrape_configs:
     scrape_interval: 10s
     static_configs:
     - targets: ['10.2.0.173:8000']
+  - job_name: 'bivac'
+    static_configs:
+    - targets: ['bivac:8182']

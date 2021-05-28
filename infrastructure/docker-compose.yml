@@ -25,6 +25,31 @@ services:
             - "traefik.http.routers.portainer.entrypoints=websecure"
             - "traefik.http.routers.portainer.middlewares=auth"
            
+    bivac:
+        image: ghcr.io/camptocamp/bivac:2.5
+        command: manager
+        container_name: bivac
+        networks: 
+            - proxy
+        volumes:
+            - "/var/run/docker.sock:/var/run/docker.sock:ro"
+        environment:
+            AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
+            AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
+            RESTIC_PASSWORD: $RESTIC_PASSWORD
+            BIVAC_TARGET_URL: s3:https://s3.amazonaws.com/me.patzke.docker-backup
+            BIVAC_SERVER_PSK: $BIVAC_SERVER_PSK
+            BIVAC_AGENT_IMAGE: ghcr.io/camptocamp/bivac:2.5
+            BIVAC_LOG_SERVER: https://bivac.l3s.io
+            BIVAC_PARALLEL_COUNT: 4
+        labels: 
+            - "traefik.enable=true"
+            - "traefik.docker.network=proxy"
+            - "traefik.http.routers.bivac.rule=Host(`bivac.l3s.io`)"
+            - "traefik.http.services.bivac.loadbalancer.server.port=8182"
+            - "traefik.http.routers.bivac.entrypoints=websecure"
+            - "traefik.http.routers.bivac.middlewares=local-ip"
+
     watchtower:
         image: containrrr/watchtower
         restart: always
