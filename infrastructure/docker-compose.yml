@@ -4,6 +4,7 @@ volumes:
     portainer:
     heimdall:
     homepage:
+    diun:
 
 services:
     portainer:
@@ -50,6 +51,24 @@ services:
             - "traefik.http.routers.bivac.entrypoints=websecure"
             - "traefik.http.routers.bivac.middlewares=local-ip"
 
+    diun:
+        image: crazymax/diun:latest
+        container_name: diun
+        restart: always
+        command: serve
+        volumes:
+            - "diun:/data"
+            - "/var/run/docker.sock:/var/run/docker.sock"
+        environment:
+            - "TZ=Europe/Berlin"
+            - "LOG_LEVEL=info"
+            - "LOG_JSON=false"
+            - "DIUN_WATCH_WORKERS=20"
+            - "DIUN_WATCH_SCHEDULE=0 */6 * * *"
+            - "DIUN_PROVIDERS_DOCKER=true"
+            - "DIUN_PROVIDERS_DOCKER_WATCHBYDEFAULT=true"
+            - "DIUN_NOTIF_DISCORD_WEBHOOKURL=$DIUN_NOTIF_DISCORD_WEBHOOKURL"
+        
     watchtower:
         image: containrrr/watchtower
         restart: always

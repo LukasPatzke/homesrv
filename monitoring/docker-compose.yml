@@ -8,7 +8,7 @@ volumes:
 
 services: 
     grafana:
-        image: grafana/grafana
+        image: grafana/grafana:7.5.7
         container_name: grafana
         restart: always
         user: "1000"
@@ -52,7 +52,8 @@ services:
             - "traefik.docker.network=proxy"
             - "traefik.http.routers.grafana.rule=Host(`grafana.l3s.io`)"
             - "traefik.http.routers.grafana.entrypoints=websecure"
-            # - "traefik.http.routers.grafana.middlewares=auth"
+            - "diun.watch_repo=true"
+            - "diun.include_tags=latest"
 
     grafana-renderer:
         image: grafana/grafana-image-renderer:latest
@@ -61,7 +62,7 @@ services:
             ENABLE_METRICS: 'true'
     
     prometheus:
-        image: prom/prometheus
+        image: prom/prometheus:v2.27.1
         container_name: prometheus
         restart: always
         networks: 
@@ -79,9 +80,11 @@ services:
             - "traefik.http.routers.prometheus.rule=Host(`prometheus.l3s.io`)"
             - "traefik.http.routers.prometheus.entrypoints=websecure"
             - "traefik.http.routers.prometheus.middlewares=auth"
+            - "diun.watch_repo=true"
+            - "diun.include_tags=latest"
 
     prometheus-archive:
-        image: prom/prometheus
+        image: prom/prometheus:v2.27.1
         container_name: prometheus-archive
         restart: always
         networks: 
@@ -99,6 +102,8 @@ services:
             - "traefik.http.routers.prometheus-archive.rule=Host(`archive.prometheus.l3s.io`)"
             - "traefik.http.routers.prometheus-archive.entrypoints=websecure"
             - "traefik.http.routers.prometheus-archive.middlewares=auth"
+            - "diun.watch_repo=true"
+            - "diun.include_tags=latest"
 
     cadvisor:
         image: gcr.io/google-containers/cadvisor:latest
@@ -149,6 +154,9 @@ services:
             - loki:/loki
             - ./loki.yml:/etc/loki/loki.yml
         command: -config.file=/etc/loki/loki.yml
+        labels: 
+            - "diun.watch_repo=true"
+            - "diun.include_tags=latest"
 
     vector:
         image: timberio/vector:0.12.X-debian
