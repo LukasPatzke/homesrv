@@ -25,7 +25,6 @@ services:
           - homebridge:/homebridge
         labels: 
           - "traefik.enable=true"
-          - "traefik.docker.network=proxy"
           - "traefik.http.services.homebridge.loadbalancer.server.port=9012"
           - "traefik.http.routers.homebridge.rule=Host(`homebridge.l3s.io`)"
           - "traefik.http.routers.homebridge.service=homebridge"
@@ -53,7 +52,6 @@ services:
         - ./homebridge-dev:/homebridge
       labels: 
         - "traefik.enable=true"
-        - "traefik.docker.network=proxy"
         - "traefik.http.services.homebridge-dev.loadbalancer.server.port=9014"
         - "traefik.http.routers.homebridge-dev.rule=Host(`dev.homebridge.l3s.io`)"
         - "traefik.http.routers.homebridge-dev.service=homebridge-dev"
@@ -81,7 +79,6 @@ services:
           - homebridge-robovac:/homebridge
         labels: 
           - "traefik.enable=true"
-          - "traefik.docker.network=proxy"
           - "traefik.http.routers.homebridge-robovac.rule=Host(`robovac.homebridge.l3s.io`)"
           - "traefik.http.services.homebridge-robovac.loadbalancer.server.port=9013"
           - "traefik.http.routers.homebridge-robovac.entrypoints=websecure"
