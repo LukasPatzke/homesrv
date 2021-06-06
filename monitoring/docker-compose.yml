@@ -70,6 +70,9 @@ services:
         volumes: 
             - prometheus:/prometheus
             - ./prometheus.yml:/etc/prometheus/prometheus.yml
+        command: 
+            - '--config.file=/etc/prometheus/prometheus.yml'
+            - '--storage.tsdb.retention.time=60d'
         labels: 
             - "traefik.enable=true"
             - "traefik.docker.network=proxy"
@@ -89,7 +92,7 @@ services:
             - ./prometheus-archive.yml:/etc/prometheus/prometheus-archive.yml
         command: 
             - '--config.file=/etc/prometheus/prometheus-archive.yml'
-            - '--storage.tsdb.retention.time=365d'
+            - '--storage.tsdb.retention.time=2y'
         labels: 
             - "traefik.enable=true"
             - "traefik.docker.network=proxy"
