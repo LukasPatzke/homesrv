@@ -3,6 +3,7 @@ version: "3.7"
 volumes:
     ssl:
     keycloak:
+    keycloak-db:
     kong:
     konga:
     pihole_data:
@@ -107,59 +108,87 @@ services:
             - "traefik.http.middlewares.auth.forwardauth.authResponseHeaders=X-Forwarded-User"
             - "traefik.http.middlewares.auth.forwardAuth.trustForwardHeader=true"
             
-    pihole:
-        container_name: pihole
-        image: pihole/pihole:v5.7
-        networks: 
-            - proxy
-        ports:
-            - 53:53/udp
-            - 53:53/tcp
-        environment:
-            TZ: 'Europe/Berlin'
-            WEBPASSWORD: ''
-            VIRTUAL_HOST: pihole.l3s.io
-        volumes:
-            - pihole_data:/etc/pihole/
-            - pihole_dnsmasq:/etc/dnsmasq.d/
-            - ./dnsmasq.conf:/etc/dnsmasq.d/dnsmasq.conf
-        restart: unless-stopped
-        labels:
-            - "traefik.enable=true"
-            - "traefik.docker.network=proxy"
-            # Admin UI
-            - "traefik.http.routers.pihole-admin.rule=Host(`pihole.l3s.io`)"
-            - "traefik.http.routers.pihole-admin.entrypoints=websecure"
-            - "traefik.http.routers.pihole-admin.middlewares=auth"
-            - "traefik.http.routers.pihole-admin.service=pihole-admin"
-            - "traefik.http.services.pihole-admin.loadbalancer.server.port=80"
+    # pihole:
+    #     container_name: pihole
+    #     image: pihole/pihole:v5.7
+    #     networks: 
+    #         - proxy
+    #     ports:
+    #         - 53:53/udp
+    #         - 53:53/tcp
+    #     environment:
+    #         TZ: 'Europe/Berlin'
+    #         WEBPASSWORD: ''
+    #         VIRTUAL_HOST: pihole.l3s.io
+    #     volumes:
+    #         - pihole_data:/etc/pihole/
+    #         - pihole_dnsmasq:/etc/dnsmasq.d/
+    #         - ./dnsmasq.conf:/etc/dnsmasq.d/dnsmasq.conf
+    #     restart: unless-stopped
+    #     labels:
+    #         - "traefik.enable=true"
+    #         - "traefik.docker.network=proxy"
+    #         # Admin UI
+    #         - "traefik.http.routers.pihole-admin.rule=Host(`pihole.l3s.io`)"
+    #         - "traefik.http.routers.pihole-admin.entrypoints=websecure"
+    #         - "traefik.http.routers.pihole-admin.middlewares=auth"
+    #         - "traefik.http.routers.pihole-admin.service=pihole-admin"
+    #         - "traefik.http.services.pihole-admin.loadbalancer.server.port=80"
 
     keycloak:
-        image: jboss/keycloak:12.0.0
+        image: jboss/keycloak:13.0.1
         restart: always
         container_name: keycloak
         networks: 
             - proxy
+            - keycloak
         volumes: 
-            - keycloak:/opt/jboss/keycloak/standalone
+            # - keycloak:/opt/jboss/keycloak/standalone
             - ./material-keycloak-theme/material:/opt/jboss/keycloak/themes/material
+            - ./export:/export
             # - ./keycloak-startup.cli:/opt/jboss/startup-scripts/startup.cli
+        depends_on: 
+            - keycloak-db
         environment: 
-            - DB_VENDOR=h2
+            - DB_VENDOR=POSTGRES
+            - DB_ADDR=keycloak-db
+            - DB_USER=keycloak
+            - DB_PASSWORD=$KEYCLOAK_DB_PASSWORD
+            - DB_SCHEMA=public
+            - DB_DATABASE=keycloak
             - KEYCLOAK_HOSTNAME=sso.l3s.io
             - PROXY_ADDRESS_FORWARDING=true
             - KEYCLOAK_USER=admin
             - KEYCLOAK_STATISTICS=all
+            # - KEYCLOAK_IMPORT=/export/l3s.json
             # - KEYCLOAK_PASSWORD
         labels: 
             - "traefik.enable=true"
+            - "traefik.docker.network=proxy"
             - "traefik.http.routers.keycloak.rule=Host(`sso.l3s.io`) && (PathPrefix(`/auth/realms/l3s/`) || PathPrefix(`/auth/resources/`))"
             - "traefik.http.routers.keycloak.entrypoints=websecure"
             - "traefik.http.routers.keycloak-admin.rule=Host(`sso.l3s.io`)"
             - "traefik.http.routers.keycloak-admin.entrypoints=websecure"
             - "traefik.http.routers.keycloak-admin.middlewares=local-ip"
-    
 
+    keycloak-db:
+        image: postgres:13
+        restart: always
+        container_name: keycloak-db
+        networks: 
+            - keycloak
+        volumes: 
+            - keycloak-db:/var/lib/postgresql/data
+        healthcheck:
+            test: ["CMD", "pg_isready", "-U", "keycloak"]
+            interval: 30s
+            timeout: 30s
+            retries: 3
+        environment: 
+            - POSTGRES_DB=keycloak
+            - POSTGRES_USER=keycloak
+            - POSTGRES_PASSWORD=$KEYCLOAK_DB_PASSWORD
+    
     kong-db:
         image: postgres:12
         container_name: kong-db
@@ -274,3 +303,4 @@ networks:
     proxy:
         external: true
     kong:
+    keycloak:
