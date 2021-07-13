@@ -207,6 +207,7 @@ services:
             UP_UNIFI_CONTROLLER_0_SAVE_SITES: "true"
             UP_UNIFI_CONTROLLER_0_URL: https://unifi.l3s.io
             UP_UNIFI_CONTROLLER_0_USER: unifipoller
+            UP_LOKI_URL: http://loki:3100
         
 networks: 
     proxy:
