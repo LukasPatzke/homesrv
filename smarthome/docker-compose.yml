@@ -83,3 +83,29 @@ services:
           - "traefik.http.services.homebridge-robovac.loadbalancer.server.port=9013"
           - "traefik.http.routers.homebridge-robovac.entrypoints=websecure"
           - "traefik.http.routers.homebridge-robovac.middlewares=auth"
+
+    node-red:
+      image: nodered/node-red:latest-12
+      container_name: node-red
+      environment:
+        - TZ=Europe/Berlin
+        - NODE_RED_CREDENTIAL_SECRET=$NODE_RED_CREDENTIAL_SECRET
+        - NODE_RED_ENABLE_PROJECTS=true
+      networks:
+        - proxy
+        - default
+      volumes:
+        - node-red:/data
+        - ./node-red/.ssh:/usr/src/node-red/.ssh
+      labels: 
+        - "traefik.enable=true"
+        - "traefik.docker.network=proxy"
+        - "traefik.http.routers.node-red.rule=Host(`node-red.l3s.io`)"
+        - "traefik.http.services.node-red.loadbalancer.server.port=1880"
+        - "traefik.http.routers.node-red.entrypoints=websecure"
+        - "traefik.http.routers.node-red.middlewares=auth"
+
+networks:
+  proxy:
+      external: true
+  default:

@@ -32,7 +32,6 @@ scrape_configs:
     static_configs:
     - targets: ['traefik:8082']
   - job_name: cadvisor
-    scrape_interval: 10s
     static_configs:
     - targets:
       - cadvisor:8080
