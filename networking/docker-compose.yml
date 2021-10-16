@@ -136,7 +136,7 @@ services:
     #         - "traefik.http.services.pihole-admin.loadbalancer.server.port=80"
 
     keycloak:
-        image: jboss/keycloak:13.0.1
+        image: jboss/keycloak:15.0.1
         restart: always
         container_name: keycloak
         networks: 
