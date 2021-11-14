@@ -30,10 +30,12 @@ services:
         image: ghcr.io/camptocamp/bivac:2.5
         command: manager
         container_name: bivac
+        restart: always
         networks: 
             - proxy
         volumes:
             - "/var/run/docker.sock:/var/run/docker.sock:ro"
+            - providers-config.custom.toml:/bivac/providers-config.custom.toml
         environment:
             AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
             AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
@@ -43,6 +45,7 @@ services:
             BIVAC_AGENT_IMAGE: ghcr.io/camptocamp/bivac:2.5
             BIVAC_LOG_SERVER: https://bivac.l3s.io
             BIVAC_PARALLEL_COUNT: 4
+            BIVAC_PROVIDERS_CONFIG: /bivac/providers-config.custom.toml
         labels: 
             - "traefik.enable=true"
             - "traefik.docker.network=proxy"
