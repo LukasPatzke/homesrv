@@ -1,0 +1,101 @@
+version: '3.3'
+
+volumes:
+  db:
+  data:
+  document_data:
+  document_log:
+
+services:
+  db:
+    image: mariadb:10.5
+    container_name: seafile-mysql
+    networks:
+      - default
+    environment:
+      - MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD 
+      - MYSQL_LOG_CONSOLE=true
+    volumes:
+      - db:/var/lib/mysql 
+    
+  memcached:
+    image: memcached:1.5.6
+    container_name: seafile-memcached
+    networks:
+      - default
+    entrypoint: memcached -m 256
+    
+  seafile:
+    image: seafileltd/seafile-mc:latest
+    container_name: seafile
+    volumes:
+      - data:/shared 
+    environment:
+      - DB_HOST=db
+      - DB_ROOT_PASSWD=$MYSQL_ROOT_PASSWORD  # Requested, the value shuold be root's password of MySQL service.
+      - TIME_ZONE=Europe/Berlin  # Optional, default is UTC. Should be uncomment and set to your local time zone.
+      - SEAFILE_ADMIN_EMAIL=admin@l3s.io # Specifies Seafile admin user, default is 'me@example.com'.
+      - SEAFILE_ADMIN_PASSWORD=$SEAFILE_ADMIN_PASSWORD     # Specifies Seafile admin password, default is 'asecret'.
+      - SEAFILE_SERVER_LETSENCRYPT=false   # Whether to use https or not.
+      - SEAFILE_SERVER_HOSTNAME=seafile.l3s.io # Specifies your host name if https is enabled.
+    depends_on:
+      - db
+      - memcached
+    networks:
+      - default
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+
+      - "traefik.http.routers.seafile.rule=Host(`seafile.l3s.io`)"
+      - "traefik.http.routers.seafile.entrypoints=websecure"
+     
+      - "traefik.http.services.seafile.loadbalancer.server.port=80"
+
+
+  onlyoffice-document-server:
+    container_name: onlyoffice-document-server
+    image: onlyoffice/documentserver:latest
+    restart: always
+    networks:
+      - proxy
+      - default
+    volumes:
+      - document_data:/var/www/onlyoffice/Data
+      - document_log:/var/log/onlyoffice
+      - ./fonts:/usr/share/fonts
+      # - ./onlyoffice/local-production-linux.json:/etc/onlyoffice/documentserver/local-production-linux.js
+    environment:
+      - JWT_ENABLED=true
+      - JWT_SECRET=$ONLYOFFICE_JWT_SECRET
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.onlyoffice-document-server.rule=Host(`onlyoffice.l3s.io`)"
+      - "traefik.http.routers.onlyoffice-document-server.entrypoints=websecure"
+      - "traefik.http.routers.onlyoffice-document-server.middlewares=onlyoffice-headers"
+      - "traefik.http.services.onlyoffice-document-server.loadbalancer.server.port=80"
+
+      ## Middleware definition
+      # Headers for onlyoffice, https://github.com/ONLYOFFICE/onlyoffice-nextcloud/issues/151
+      # - "traefik.http.middlewares.onlyoffice-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
+      # - "traefik.http.middlewares.onlyoffice-headers.headers.accesscontrolalloworiginlist=*"
+
+  seafile-logs:
+    image: grafana/promtail
+    container_name: seafile-logs
+    restart: unless-stopped
+    networks:
+      - proxy
+    volumes:
+      - ./promtail.yml:/etc/promtail/promtail.yml
+      - data:/shared:ro
+      - document_log:/document_log:ro
+    command: -config.file=/etc/promtail/promtail.yml
+
+
+networks:
+  default:
+  proxy:
+    external: true
