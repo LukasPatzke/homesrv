@@ -33,3 +33,9 @@
 	post_cmd = "rm -rf $volume/backups"
 	detect_cmd = "[[ -f $volume/mongod.lock ]]"
 	backup_dir = "backups"
+
+	[providers.influxdb2]
+	pre_cmd = "mkdir -p $volume/backups && influx backup $volume/backups -t $DOCKER_INFLUXDB_INIT_ADMIN_TOKEN"
+	post_cmd = "rm -rf $volume/backups"
+	detect_cmd = "[[ -f $volume/influx-configs ]]"
+	backup_dir = "backups"
