@@ -84,28 +84,6 @@ services:
             - "diun.watch_repo=true"
             - "diun.include_tags=latest"
 
-    prometheus-archive:
-        image: prom/prometheus:v2.27.1
-        container_name: prometheus-archive
-        restart: always
-        networks: 
-            - proxy
-            - default
-        volumes: 
-            - prometheus-archive:/prometheus
-            - ./prometheus-archive.yml:/etc/prometheus/prometheus-archive.yml
-        command: 
-            - '--config.file=/etc/prometheus/prometheus-archive.yml'
-            - '--storage.tsdb.retention.time=2y'
-        labels: 
-            - "traefik.enable=true"
-            - "traefik.docker.network=proxy"
-            - "traefik.http.routers.prometheus-archive.rule=Host(`archive.prometheus.l3s.io`)"
-            - "traefik.http.routers.prometheus-archive.entrypoints=websecure"
-            - "traefik.http.routers.prometheus-archive.middlewares=auth"
-            - "diun.watch_repo=true"
-            - "diun.include_tags=latest"
-
     cadvisor:
         image: gcr.io/google-containers/cadvisor:latest
         container_name: cadvisor
