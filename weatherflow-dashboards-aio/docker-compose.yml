@@ -31,6 +31,7 @@ services:
       - default
     volumes:
       - wxfdashboardsaio-influxdb-data:/var/lib/influxdb:rw
+      - ./backup/:/backup
     environment:
       TZ: Europe/Berlin
       INFLUXDB_ADMIN_PASSWORD: $INFLUXDB_ADMIN_PASSWORD

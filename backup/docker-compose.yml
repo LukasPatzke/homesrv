@@ -1,0 +1,31 @@
+version: "3.4"
+
+volumes:
+  pgdata:
+  mysqldata:
+
+
+services:
+  test-postres:
+    image: postgres:13
+    container_name: backup-test-postgres
+    restart: unless-stopped
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports: 
+      - 5432:5432 
+    environment:
+      - POSTGRES_DB=backup
+      - POSTGRES_USER=backup
+      - POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+
+  test-mysql:
+    image: mariadb:10.5
+    container_name: backup-test-mysql
+    restart: unless-stopped
+    ports:
+      - 3306:3306
+    environment:
+      - MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD 
+    volumes:
+      - mysqldata:/var/lib/mysql 

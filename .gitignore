@@ -2,3 +2,6 @@
 /media/movies
 /media/downloads
 .ssh
+
+# Database dumps
+*_dump.sql
