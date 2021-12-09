@@ -17,7 +17,9 @@ services:
         ports:
             - 80:80
             - 443:443
-            - 8000:8000
+            - 127.0.0.1:8000:8000
+            - 1883:1883
+            - 8883:8883
         networks: 
             - proxy
         volumes:
@@ -55,6 +57,9 @@ services:
             - "--entrypoints.websecure.http.tls.options=modern@file"
             # local api http entrypoint
             - "--entrypoints.local-api.address=:8000"
+            # mqtt entrypoint
+            - "--entrypoints.mqtt.address=:1883"
+            - "--entrypoints.mqtts.address=:8883"
             # letsencrypt cert resolver
             - "--certificatesresolvers.letsencrypt.acme.dnschallenge=true"
             - "--certificatesresolvers.letsencrypt.acme.dnschallenge.provider=ovh"

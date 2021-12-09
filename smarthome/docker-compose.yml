@@ -7,6 +7,8 @@ volumes:
     ambienthue:
     homebridge:
     homebridge-robovac:
+    influxdb-data:
+    influxdb-v2-data:
 
 services:
     homebridge:
@@ -105,6 +107,69 @@ services:
         - "traefik.http.routers.node-red.entrypoints=websecure"
         - "traefik.http.routers.node-red.middlewares=auth"
 
+    mosquitto:
+      image: "eclipse-mosquitto"
+      container_name: "mosquitto"
+      restart: always
+      expose:
+        - "1883"
+        - "9001"
+      networks:
+        - proxy
+      volumes:
+        - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+        - mosquitto:/mosquitto/data
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=proxy"
+
+        - "traefik.tcp.routers.mqtt.rule=HostSNI(`*`)"
+        - "traefik.tcp.routers.mqtt.entrypoints=mqtt"
+
+        - "traefik.tcp.routers.mqtts.rule=HostSNI(`*`)"
+        - "traefik.tcp.routers.mqtts.entrypoints=mqtts"
+        - "traefik.tcp.routers.mqtts.tls.certresolver=letsencrypt"
+        - "traefik.tcp.services.mqtt.loadbalancer.server.port=1883"
+
+    sensor_influxdb:
+      image: influxdb:2.1.1
+      container_name: sensor_influxdb
+      restart: always
+      networks:
+        - proxy
+        - default
+      volumes:
+        - influxdb-v2-data:/etc/influxdb2
+        - ./backup:/backup
+      environment:
+        TZ: Europe/Berlin
+        INFLUXDB_ADMIN_PASSWORD: $INFLUXDB_ADMIN_PASSWORD
+        INFLUXDB_ADMIN_USER: admin
+        INFLUXDB_DATA_ENGINE: tsm1
+        INFLUXDB_DB: sensor
+        INFLUXDB_HTTP_LOG_ENABLED: "false"
+        INFLUXDB_LOGGING_FORMAT: json
+        INFLUXDB_LOGGING_LEVEL: info
+        INFLUXDB_MONITOR_STORE_DATABASE: _internal
+        INFLUXDB_MONITOR_STORE_ENABLED: "true"
+        INFLUXDB_REPORTING_DISABLED: "true"
+        INFLUXDB_USER: sensor
+        INFLUXDB_USER_PASSWORD: $INFLUXDB_USER_PASSWORD
+        INFLUXDB_HTTP_FLUX_ENABLED: "true"
+
+        DOCKER_INFLUXDB_INIT_USERNAME: sensor
+        DOCKER_INFLUXDB_INIT_PASSWORD: $INFLUXDB_USER_PASSWORD
+        DOCKER_INFLUXDB_INIT_ORG: sensor
+        DOCKER_INFLUXDB_INIT_BUCKET: sensor
+        DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: $INFLUXDB_ADMIN_PASSWORD
+        DOCKER_INFLUXDB_INIT_MODE: upgrade
+
+      labels: 
+        - "traefik.enable=true"
+        - "traefik.docker.network=proxy"
+        - "traefik.http.routers.influxdb.rule=Host(`influxdb.l3s.io`)"
+        - "traefik.http.routers.influxdb.entrypoints=websecure"
+        - "traefik.http.routers.influxdb.middlewares=auth"
 networks:
   proxy:
       external: true
