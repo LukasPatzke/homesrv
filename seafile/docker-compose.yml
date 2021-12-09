@@ -1,10 +1,11 @@
-version: '3.3'
+version: '2.3'
 
 volumes:
   db:
   data:
   document_data:
   document_log:
+  elasticsearch_data:
 
 services:
   db:
@@ -24,12 +25,31 @@ services:
     networks:
       - default
     entrypoint: memcached -m 256
+
+  elasticsearch:
+    image: seafileltd/elasticsearch-with-ik:5.6.16
+    container_name: seafile-elasticsearch
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    mem_limit: 2g
+    networks:
+      - default
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data  # Requested, specifies the path to Elasticsearch data persistent store.
+    environment:
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+    
     
   seafile:
-    image: seafileltd/seafile-mc:latest
+    image: docker.seadrive.org/seafileltd/seafile-pro-mc:latest
     container_name: seafile
     volumes:
       - data:/shared 
+      - ./conf:/shared/seafile/conf
     environment:
       - DB_HOST=db
       - DB_ROOT_PASSWD=$MYSQL_ROOT_PASSWORD  # Requested, the value shuold be root's password of MySQL service.
@@ -41,6 +61,7 @@ services:
     depends_on:
       - db
       - memcached
+      - elasticsearch
     networks:
       - default
       - proxy
@@ -50,8 +71,15 @@ services:
 
       - "traefik.http.routers.seafile.rule=Host(`seafile.l3s.io`)"
       - "traefik.http.routers.seafile.entrypoints=websecure"
+      - "traefik.http.routers.seafile.service=seafile"
      
       - "traefik.http.services.seafile.loadbalancer.server.port=80"
+
+      - "traefik.http.routers.seafdav.rule=Host(`seafile.l3s.io`) && PathPrefix(`/seafdav`)"
+      - "traefik.http.routers.seafdav.entrypoints=websecure"
+      - "traefik.http.routers.seafdav.service=seafdav"
+     
+      - "traefik.http.services.seafdav.loadbalancer.server.port=8080"
 
 
   onlyoffice-document-server:
@@ -69,6 +97,15 @@ services:
     environment:
       - JWT_ENABLED=true
       - JWT_SECRET=$ONLYOFFICE_JWT_SECRET
+      # Reduce ram useage https://github.com/ONLYOFFICE/Docker-DocumentServer/issues/69
+      - NGINX_WORKER_PROCESSES=1
+      - NGINX_WORKER_CONNECTIONS=1024
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/healthcheck/"]
+      interval: 3m
+      timeout: 10s
+      retries: 3
+      start_period: 2m
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
@@ -79,8 +116,8 @@ services:
 
       ## Middleware definition
       # Headers for onlyoffice, https://github.com/ONLYOFFICE/onlyoffice-nextcloud/issues/151
-      # - "traefik.http.middlewares.onlyoffice-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
-      # - "traefik.http.middlewares.onlyoffice-headers.headers.accesscontrolalloworiginlist=*"
+      - "traefik.http.middlewares.onlyoffice-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.middlewares.onlyoffice-headers.headers.accesscontrolalloworiginlist=*"
 
   seafile-logs:
     image: grafana/promtail
