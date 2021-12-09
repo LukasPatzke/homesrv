@@ -136,8 +136,18 @@ services:
             - '--path.procfs=/host/proc'
             - '--path.sysfs=/host/sys'
             - '--path.rootfs=/rootfs'
-            - '--collector.filesystem.ignored-mount-points="^(/rootfs|/host|)/(sys|proc|dev|host|etc)($$|/)"'
-            - '--collector.filesystem.ignored-fs-types="^(sys|proc|auto|cgroup|devpts|ns|au|fuse\.lxc|mqueue)(fs|)$$"'
+            - '--collector.filesystem.mount-points-exclude="^(/rootfs|/host|)/(sys|proc|dev|host|etc)($$|/)"'
+            - '--collector.filesystem.fs-types-exclude="^(sys|proc|auto|cgroup|devpts|ns|au|fuse\.lxc|mqueue)(fs|)$$"'
+            - '--collector.powersupplyclass'
+
+    snmp-exporter:
+        image: prom/snmp-exporter
+        container_name: snmp-exporter
+        restart: unless-stopped
+        networks:
+            - default
+        volumes:
+          - ./snmp_exporter:/etc/snmp_exporter
 
     loki:
         image: grafana/loki:2.2.1
