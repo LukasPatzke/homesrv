@@ -1,0 +1,26 @@
+version: "3.4"
+
+volumes:
+  repetier-data:
+
+services:
+  repetier:
+    image: yadomi/repetier-server:latest
+    container_name: repetier
+    restart: unless-stopped
+    networks:
+      - proxy
+    volumes:
+      - repetier-data:/data
+    devices:
+      - "/dev/ttyUSB0"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.repetier.rule=Host(`repetier.l3s.io`)"
+      - "traefik.http.routers.repetier.entrypoints=websecure"
+      - "traefik.http.routers.repetier.middlewares=auth"
+
+networks:
+  proxy:
+    external: true
