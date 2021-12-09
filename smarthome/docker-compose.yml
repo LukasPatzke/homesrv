@@ -6,7 +6,6 @@ volumes:
     deconz:
     ambienthue:
     homebridge:
-    homebridge-robovac:
     influxdb-data:
     influxdb-v2-data:
 
@@ -38,57 +37,10 @@ services:
           - "traefik.http.routers.ambienthue.entrypoints=websecure"
           - "traefik.http.routers.ambienthue.middlewares=local-ip"
 
-    homebridge-dev:
-      image: oznu/homebridge:no-avahi
-      container_name: homebridge-dev
-      restart: always
-      network_mode: host
-      environment: 
-        TZ: Europe/Berlin
-        HOMEBRIDGE_CONFIG_UI: 1
-        HOMEBRIDGE_CONFIG_UI_PORT: 9014
-        PUID: 1000
-        PGID: 1000
-        TERMINATE_ON_ERROR: 1 
-      volumes: 
-        - ./homebridge-dev:/homebridge
-      labels: 
-        - "traefik.enable=true"
-        - "traefik.http.services.homebridge-dev.loadbalancer.server.port=9014"
-        - "traefik.http.routers.homebridge-dev.rule=Host(`dev.homebridge.l3s.io`)"
-        - "traefik.http.routers.homebridge-dev.service=homebridge-dev"
-        - "traefik.http.routers.homebridge-dev.entrypoints=websecure"
-        - "traefik.http.routers.homebridge-dev.middlewares=local-ip"
-        - "traefik.http.services.ambienthue-dev.loadbalancer.server.port=3001"
-        - "traefik.http.routers.ambienthue-dev.rule=Host(`dev.ambienthue.l3s.io`)"
-        - "traefik.http.routers.ambienthue-dev.service=ambienthue-dev"
-        - "traefik.http.routers.ambienthue-dev.entrypoints=websecure"
-        - "traefik.http.routers.ambienthue-dev.middlewares=local-ip"
-        
-    homebridge-robovac:
-        image: oznu/homebridge:no-avahi
-        container_name: homebridge-robovac
-        restart: always
-        network_mode: host
-        environment: 
-          TZ: Europe/Berlin
-          HOMEBRIDGE_CONFIG_UI: 1
-          HOMEBRIDGE_CONFIG_UI_PORT: 9013
-          PUID: 1000
-          PGID: 1000
-          TERMINATE_ON_ERROR: 1 
-        volumes: 
-          - homebridge-robovac:/homebridge
-        labels: 
-          - "traefik.enable=true"
-          - "traefik.http.routers.homebridge-robovac.rule=Host(`robovac.homebridge.l3s.io`)"
-          - "traefik.http.services.homebridge-robovac.loadbalancer.server.port=9013"
-          - "traefik.http.routers.homebridge-robovac.entrypoints=websecure"
-          - "traefik.http.routers.homebridge-robovac.middlewares=auth"
-
     node-red:
       image: nodered/node-red:latest-12
       container_name: node-red
+      restart: always
       environment:
         - TZ=Europe/Berlin
         - NODE_RED_CREDENTIAL_SECRET=$NODE_RED_CREDENTIAL_SECRET
