@@ -74,6 +74,13 @@ services:
             - "traefik.http.routers.local-api.entrypoints=local-api"
             - "traefik.http.routers.local-api.rule=PathPrefix(`/api`)"
             - "traefik.http.routers.local-api.service=api@internal"
+
+            - "traefik.http.routers.traefikmetrics.entrypoints=websecure"
+            - "traefik.http.routers.traefikmetrics.rule=Host(`traefik.l3s.io`) && PathPrefix(`/metrics`)"
+            - "traefik.http.routers.traefikmetrics.service=traefikmetrics"
+            - "traefik.http.routers.traefik.middlewares=local-ip"
+            - "traefik.http.services.traefikmetrics.loadbalancer.server.port=8082"
+
             # local ips
             - "traefik.http.middlewares.local-ip.ipwhitelist.sourcerange=172.16.0.0/12, 192.168.0.0/16, 10.2.0.0/16"
         extra_hosts:
