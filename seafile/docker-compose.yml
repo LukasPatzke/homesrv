@@ -27,7 +27,7 @@ services:
     entrypoint: memcached -m 256
 
   elasticsearch:
-    image: seafileltd/elasticsearch-with-ik:5.6.16
+    image: elasticsearch:7.16.2
     container_name: seafile-elasticsearch
     ulimits:
       memlock:
@@ -45,7 +45,7 @@ services:
     
     
   seafile:
-    image: docker.seadrive.org/seafileltd/seafile-pro-mc:latest
+    image: docker.seadrive.org/seafileltd/seafile-pro-mc:9.0.4
     container_name: seafile
     volumes:
       - data:/shared 
