@@ -35,11 +35,21 @@ services:
             GF_AUTH_GENERIC_OAUTH_NAME: "Keycloak"
             GF_AUTH_GENERIC_OAUTH_CLIENT_ID: "grafana"
             GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET: $GRAFANA_CLIENT_SECRET
-            GF_AUTH_GENERIC_OAUTH_SCOPES: openid profile email
-            GF_AUTH_GENERIC_OAUTH_AUTH_URL: "https://auth.l3s.io/auth/realms/l3s/protocol/openid-connect/auth"
-            GF_AUTH_GENERIC_OAUTH_TOKEN_URL: "https://auth.l3s.io/auth/realms/l3s/protocol/openid-connect/token"
-            GF_AUTH_GENERIC_OAUTH_API_URL: "https://auth.l3s.io/auth/realms/l3s/protocol/openid-connect/userinfo"
-            GF_AUTH_SIGNOUT_REDIRECT_URL: "https://auth.l3s.io/auth/realms/l3s/protocol/openid-connect/logout?redirect_uri=https%3A%2F%2Fgrafana.l3s.io"
+            GF_AUTH_GENERIC_OAUTH_SCOPES: openid profile email roles
+            GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_STRICT: "true"
+            GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH: contains(resource_access.grafana.roles[*],
+                'grafana_admin') && 'Admin' ||
+                contains(resource_access.grafana.roles[*], 'grafana_editor') && 'Editor' ||
+                contains(resource_access.grafana.roles[*], 'grafana_viewer') &&
+                'Viewer'
+            GF_AUTH_GENERIC_OAUTH_AUTH_URL: "https://auth.l3s.io/realms/l3s/protocol/o\
+                penid-connect/auth"
+            GF_AUTH_GENERIC_OAUTH_TOKEN_URL: "https://auth.l3s.io/realms/l3s/protocol/\
+                openid-connect/token"
+            GF_AUTH_GENERIC_OAUTH_API_URL: "https://auth.l3s.io/realms/l3s/protocol/op\
+                enid-connect/userinfo"
+            GF_AUTH_SIGNOUT_REDIRECT_URL: "https://auth.l3s.io/realms/l3s/protocol/ope\
+                nid-connect/logout?redirect_uri=https%3A%2F%2Fgrafana.l3s.io"
             GF_SMTP_ENABLED: "true"
             GF_SMTP_HOST: hosted.mailcow.de:465
             GF_SMTP_USER: grafana@patzke.me
@@ -164,7 +174,7 @@ services:
             - MINIO_PROMETHEUS_URL=http://prometheus:9090
             - MINIO_PROMETHEUS_JOB_ID=minio
 
-            - MINIO_IDENTITY_OPENID_CONFIG_URL=https://auth.l3s.io/auth/realms/l3s/.well-known/openid-configuration
+            - MINIO_IDENTITY_OPENID_CONFIG_URL=https://auth.l3s.io/realms/l3s/.well-known/openid-configuration
             - MINIO_IDENTITY_OPENID_CLIENT_ID=minio
             - MINIO_IDENTITY_OPENID_CLIENT_SECRET=$MINIO_IDENTITY_OPENID_CLIENT_SECRET
             - MINIO_IDENTITY_OPENID_CLAIM_NAME=policy

@@ -1,0 +1,58 @@
+version: "3.7"
+
+volumes:
+    db:
+
+networks:
+    proxy:
+        external: true
+    default:
+
+services:
+    keycloak:
+        build: .
+        restart: always
+        container_name: keycloak_app
+        networks: 
+            - proxy
+            - default
+        depends_on: 
+            - db
+        environment: 
+            - KC_DB_URL_HOST=db
+            - KC_DB_USERNAME=keycloak
+            - KC_DB_PASSWORD=$KEYCLOAK_DB_PASSWORD
+            - KC_DB_SCHEMA=public
+            - KC_DB_URL_DATABASE=keycloak
+
+            - KC_HOSTNAME=auth.l3s.io
+            - KC_PROXY=edge
+            - KC_HTTP_ENABLED=true
+        volumes: 
+            - ./primer-keycloak-theme/:/opt/keycloak/themes/primer
+        labels: 
+            - "traefik.enable=true"
+            - "traefik.docker.network=proxy"
+            - "traefik.http.routers.keycloak.rule=Host(`auth.l3s.io`) && (PathPrefix(`/realms/l3s/`) || PathPrefix(`/resources/`))"
+            - "traefik.http.routers.keycloak.entrypoints=websecure"
+            - "traefik.http.routers.keycloak-admin.rule=Host(`auth.l3s.io`)"
+            - "traefik.http.routers.keycloak-admin.entrypoints=websecure"
+            - "traefik.http.routers.keycloak-admin.middlewares=local-ip"
+
+    db:
+        image: postgres:13
+        restart: always
+        container_name: keycloak_db
+        networks: 
+            - default
+        volumes: 
+            - db:/var/lib/postgresql/data
+        healthcheck:
+            test: ["CMD", "pg_isready", "-U", "keycloak"]
+            interval: 30s
+            timeout: 30s
+            retries: 3
+        environment: 
+            - POSTGRES_DB=keycloak
+            - POSTGRES_USER=keycloak
+            - POSTGRES_PASSWORD=$KEYCLOAK_DB_PASSWORD

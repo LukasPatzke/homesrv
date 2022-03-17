@@ -2,12 +2,8 @@ version: "3.7"
 
 volumes:
     ssl:
-    keycloak:
-    keycloak-db:
     kong:
     konga:
-    pihole_data:
-    pihole_dnsmasq:
 
 services: 
     traefik:
@@ -100,7 +96,7 @@ services:
         environment: 
             - PROVIDERS_OIDC_CLIENT_ID=forward-auth
             - PROVIDERS_OIDC_CLIENT_SECRET=$KEYCLOAK_CLIENT_SECRET
-            - PROVIDERS_OIDC_ISSUER_URL=https://auth.l3s.io/auth/realms/l3s
+            - PROVIDERS_OIDC_ISSUER_URL=https://auth.l3s.io/realms/l3s
             - DEFAULT_PROVIDER=oidc
             - SECRET=$COOKIE_SECRET
             - AUTH_HOST=forward.auth.l3s.io
@@ -119,62 +115,6 @@ services:
             - "traefik.http.middlewares.auth.forwardauth.address=http://forward-auth:4181"
             - "traefik.http.middlewares.auth.forwardauth.authResponseHeaders=X-Forwarded-User"
             - "traefik.http.middlewares.auth.forwardAuth.trustForwardHeader=true"
-
-
-    keycloak:
-        image: jboss/keycloak:15.0.1
-        restart: always
-        container_name: keycloak
-        networks: 
-            - proxy
-            - keycloak
-        volumes: 
-            # - keycloak:/opt/jboss/keycloak/standalone
-            - ./material-keycloak-theme/material:/opt/jboss/keycloak/themes/material
-            - ./primer-keycloak-theme/:/opt/jboss/keycloak/themes/primer
-            - ./export:/export
-            # - ./keycloak-startup.cli:/opt/jboss/startup-scripts/startup.cli
-        depends_on: 
-            - keycloak-db
-        environment: 
-            - DB_VENDOR=POSTGRES
-            - DB_ADDR=keycloak-db
-            - DB_USER=keycloak
-            - DB_PASSWORD=$KEYCLOAK_DB_PASSWORD
-            - DB_SCHEMA=public
-            - DB_DATABASE=keycloak
-            - KEYCLOAK_HOSTNAME=auth.l3s.io
-            - PROXY_ADDRESS_FORWARDING=true
-            - KEYCLOAK_USER=admin
-            - KEYCLOAK_STATISTICS=all
-            # - KEYCLOAK_IMPORT=/export/l3s.json
-            # - KEYCLOAK_PASSWORD
-        labels: 
-            - "traefik.enable=true"
-            - "traefik.docker.network=proxy"
-            - "traefik.http.routers.keycloak.rule=Host(`auth.l3s.io`) && (PathPrefix(`/auth/realms/l3s/`) || PathPrefix(`/auth/resources/`))"
-            - "traefik.http.routers.keycloak.entrypoints=websecure"
-            - "traefik.http.routers.keycloak-admin.rule=Host(`auth.l3s.io`)"
-            - "traefik.http.routers.keycloak-admin.entrypoints=websecure"
-            - "traefik.http.routers.keycloak-admin.middlewares=local-ip"
-
-    keycloak-db:
-        image: postgres:13
-        restart: always
-        container_name: keycloak-db
-        networks: 
-            - keycloak
-        volumes: 
-            - keycloak-db:/var/lib/postgresql/data
-        healthcheck:
-            test: ["CMD", "pg_isready", "-U", "keycloak"]
-            interval: 30s
-            timeout: 30s
-            retries: 3
-        environment: 
-            - POSTGRES_DB=keycloak
-            - POSTGRES_USER=keycloak
-            - POSTGRES_PASSWORD=$KEYCLOAK_DB_PASSWORD
     
     kong-db:
         image: postgres:12
@@ -290,4 +230,3 @@ networks:
     proxy:
         external: true
     kong:
-    keycloak:
