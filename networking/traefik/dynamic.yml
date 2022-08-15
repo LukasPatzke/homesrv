@@ -2,3 +2,8 @@ tls:
   options:
     modern:
       minVersion: "VersionTLS12"
+
+http:
+  serversTransports:
+    insecure:
+      insecureSkipVerify: true
