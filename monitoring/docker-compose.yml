@@ -2,23 +2,22 @@ version: "3.7"
 
 volumes:
     grafana:
-    prometheus:
-    prometheus-archive:
+    prometheus: 
     loki:
     minio:
-
-services: 
+        
+services:
     grafana:
-        image: grafana/grafana:8.0.4
+        image: grafana/grafana:8.4.3
         container_name: grafana
         restart: always
         user: "1000"
         networks:
             - proxy
             - default
-        volumes: 
+        volumes:
             - grafana:/var/lib/grafana
-        environment: 
+        environment:
             GF_SERVER_ROOT_URL: https://grafana.l3s.io/
             GF_SERVER_DOMAIN: grafana.l3s.io
             GF_SESSION_COOKIE_SECURE: "true"
@@ -29,7 +28,6 @@ services:
             GF_AUTH_PROXY_HEADER_NAME: "X-Forwarded-User"
             GF_AUTH_PROXY_HEADER_PROPERTY: email
             GF_AUTH_PROXY_AUTO_SIGN_UP: "true"
-            # GF_AUTH_SIGNOUT_REDIRECT_URL: "https://sso.int.patzke.me/auth/realms/patzke.me/protocol/openid-connect/logout?redirect_uri=https%3A%2F%2Fforward.sso.int.patzke.me%2F_oauth%2Flogout"
             GF_AUTH_GENERIC_OAUTH_ENABLED: "true"
             GF_AUTH_GENERIC_OAUTH_ALLOW_SIGN_UP: "true"
             GF_AUTH_GENERIC_OAUTH_NAME: "Keycloak"
@@ -58,7 +56,14 @@ services:
             GF_RENDERING_SERVER_URL: http://grafana-renderer:8081/render
             GF_RENDERING_CALLBACK_URL: http://grafana:3000/
             GF_LOG_FILTERS: rendering:debug
-        labels: 
+            GF_PANELS_DISABLE_SANITIZE_HTML: "true"
+            GF_INSTALL_PLUGINS: "https://github.com/LukasPatzke/grafana-direction-panel/rel\
+                eases/download/v1.0.0/lukaspatzke-direction-panel-1.0.0.zip;luk\
+                aspatzke-direction-panel"
+            GF_UNIFIED_ALERTING_ENABLED: "true"
+            GF_ALERTING_ENABLED: "false"
+
+        labels:
             - "traefik.enable=true"
             - "traefik.docker.network=proxy"
             - "traefik.http.routers.grafana.rule=Host(`grafana.l3s.io`)"
@@ -69,23 +74,26 @@ services:
     grafana-renderer:
         image: grafana/grafana-image-renderer:latest
         container_name: grafana-renderer
+        restart: always
         environment:
             ENABLE_METRICS: 'true'
-    
+
     prometheus:
         image: prom/prometheus:v2.27.1
         container_name: prometheus
         restart: always
-        networks: 
+        networks:
             - proxy
             - default
-        volumes: 
+        volumes:
             - prometheus:/prometheus
             - ./prometheus.yml:/etc/prometheus/prometheus.yml
-        command: 
+        command:
             - '--config.file=/etc/prometheus/prometheus.yml'
             - '--storage.tsdb.retention.time=60d'
-        labels: 
+            - '--web.enable-admin-api'
+            - '--enable-feature=promql-negative-offset'
+        labels:
             - "traefik.enable=true"
             - "traefik.docker.network=proxy"
             - "traefik.http.routers.prometheus.rule=Host(`prometheus.l3s.io`)"
@@ -98,22 +106,30 @@ services:
         image: gcr.io/google-containers/cadvisor:latest
         container_name: cadvisor
         restart: always
-        networks: 
+        networks:
             - default
+        security_opt:
+            - no-new-privileges:true
         volumes:
-        - /:/rootfs:ro
-        - /var/run:/var/run:rw
-        - /sys:/sys:ro
-        - /var/lib/docker/:/var/lib/docker:ro
+            - /:/rootfs:ro
+            - /var/run/docker.sock:/var/run/docker.sock:ro
+            - /var/run:/var/run:rw
+            - /sys:/sys:ro
+            - /var/lib/docker/:/var/lib/docker:ro
+            - /sys/fs/cgroup:/cgroup:ro
+            - /dev/disk/:/dev/disk:ro
+        devices:
+            - /dev/kmsg:/dev/kmsg
         command:
-            - '--housekeeping_interval=10s'
-            - '--docker_only'
+            - '-housekeeping_interval=10s'
+            - '-docker_only=true'
+            - '-allow_dynamic_housekeeping=false'
 
     node-exporter:
         image: prom/node-exporter:latest
         container_name: node-exporter
         restart: unless-stopped
-        networks: 
+        networks:
             - default
         volumes:
             - /etc/localtime:/etc/localtime:ro
@@ -139,21 +155,26 @@ services:
           - ./snmp_exporter:/etc/snmp_exporter
 
     loki:
-        image: grafana/loki:2.2.1
+        image: grafana/loki:2.3.0
         container_name: loki
         restart: always
         ports:
-            - 3100:3100
-        networks: 
+            - 127.0.0.1:3100:3100
+        networks:
             - default
             - proxy
-        volumes: 
+        volumes:
             - /etc/localtime:/etc/localtime:ro
             - /etc/timezone:/etc/timezone:ro
             - loki:/loki
             - ./loki.yml:/etc/loki/loki.yml
-        command: -config.file=/etc/loki/loki.yml
-        labels: 
+        command:
+            - '-config.file=/etc/loki/loki.yml'
+            - '-config.expand-env=true'
+        environment:
+            - LOKI_ACCESS_KEY_ID=$LOKI_ACCESS_KEY_ID
+            - LOKI_ACCESS_KEY_SECRET=$LOKI_ACCESS_KEY_SECRET
+        labels:
             - "diun.watch_repo=true"
             - "diun.include_tags=latest"
 
@@ -197,11 +218,11 @@ services:
         image: grafana/promtail:2.2.1
         container_name: promtail
         restart: always
-        networks: 
+        networks:
             - default
         expose:
             - 1514
-        volumes: 
+        volumes:
             - ./promtail.yml:/etc/promtail/promtail.yml
         command: -config.file=/etc/promtail/promtail.yml
 
@@ -209,18 +230,18 @@ services:
         image: balabit/syslog-ng:latest
         container_name: syslog-ng
         restart: always
-        networks: 
+        networks:
             - default
-        ports: 
+        ports:
             - 514:514
             - 514:514/udp
             - 601:601
-        command: 
+        command:
             # - --no-caps
             - --stderr
-        cap_add: 
+        cap_add:
             - CAP_SYSLOG
-        volumes: 
+        volumes:
             - ./syslog-ng.conf:/etc/syslog-ng/syslog-ng.conf
 
     unifi-poller:
@@ -240,11 +261,11 @@ services:
             UP_UNIFI_CONTROLLER_0_SAVE_EVENTS: "true"
             UP_UNIFI_CONTROLLER_0_SAVE_IDS: "true"
             UP_UNIFI_CONTROLLER_0_SAVE_SITES: "true"
-            UP_UNIFI_CONTROLLER_0_URL: https://unifi.l3s.io
-            UP_UNIFI_CONTROLLER_0_USER: unifipoller
+            UP_UNIFI_CONTROLLER_0_URL: https://controller.l3s.io
+            UP_UNIFI_CONTROLLER_0_USER: lukas
             UP_LOKI_URL: http://loki:3100
-        
-networks: 
+
+networks:
     proxy:
         external: true
-    default:
+    default: null
