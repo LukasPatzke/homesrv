@@ -11,6 +11,7 @@ services:
   db:
     image: mariadb:10.5
     container_name: seafile-mysql
+    restart: unless-stopped
     networks:
       - default
     environment:
@@ -22,6 +23,7 @@ services:
   memcached:
     image: memcached:1.5.6
     container_name: seafile-memcached
+    restart: unless-stopped
     networks:
       - default
     entrypoint: memcached -m 256
@@ -29,6 +31,7 @@ services:
   elasticsearch:
     image: elasticsearch:7.16.2
     container_name: seafile-elasticsearch
+    restart: unless-stopped
     ulimits:
       memlock:
         soft: -1
@@ -46,6 +49,7 @@ services:
     
   seafile:
     image: docker.seadrive.org/seafileltd/seafile-pro-mc:9.0.4
+    restart: unless-stopped
     container_name: seafile
     volumes:
       - data:/shared 
@@ -85,7 +89,7 @@ services:
   onlyoffice-document-server:
     container_name: onlyoffice-document-server
     image: onlyoffice/documentserver:latest
-    restart: always
+    restart: unless-stopped
     networks:
       - proxy
       - default
