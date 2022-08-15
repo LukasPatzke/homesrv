@@ -11,7 +11,7 @@ volumes:
 
 services:
     homebridge:
-        image: oznu/homebridge:no-avahi
+        image: oznu/homebridge
         container_name: homebridge
         restart: always
         network_mode: host
@@ -22,8 +22,9 @@ services:
           PUID: 1000
           PGID: 1000
           TERMINATE_ON_ERROR: 1 
+          ENABLE_AVAHI: 0
         volumes: 
-          - homebridge:/homebridge
+          - homebridge:/homebridge          
         labels: 
           - "traefik.enable=true"
           - "traefik.http.services.homebridge.loadbalancer.server.port=9012"
@@ -122,6 +123,7 @@ services:
         - "traefik.http.routers.influxdb.rule=Host(`influxdb.l3s.io`)"
         - "traefik.http.routers.influxdb.entrypoints=websecure"
         - "traefik.http.routers.influxdb.middlewares=auth"
+
 networks:
   proxy:
       external: true
