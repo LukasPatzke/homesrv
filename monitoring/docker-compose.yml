@@ -79,7 +79,7 @@ services:
             ENABLE_METRICS: 'true'
 
     prometheus:
-        image: prom/prometheus:v2.27.1
+        image: prom/prometheus:v2.37.0
         container_name: prometheus
         restart: always
         networks:
@@ -102,28 +102,28 @@ services:
             - "diun.watch_repo=true"
             - "diun.include_tags=latest"
 
-    cadvisor:
-        image: gcr.io/google-containers/cadvisor:latest
-        container_name: cadvisor
-        restart: always
-        networks:
-            - default
-        security_opt:
-            - no-new-privileges:true
-        volumes:
-            - /:/rootfs:ro
-            - /var/run/docker.sock:/var/run/docker.sock:ro
-            - /var/run:/var/run:rw
-            - /sys:/sys:ro
-            - /var/lib/docker/:/var/lib/docker:ro
-            - /sys/fs/cgroup:/cgroup:ro
-            - /dev/disk/:/dev/disk:ro
-        devices:
-            - /dev/kmsg:/dev/kmsg
-        command:
-            - '-housekeeping_interval=10s'
-            - '-docker_only=true'
-            - '-allow_dynamic_housekeeping=false'
+    # cadvisor:
+    #     image: gcr.io/google-containers/cadvisor:latest
+    #     container_name: cadvisor
+    #     restart: always
+    #     networks:
+    #         - default
+    #     security_opt:
+    #         - no-new-privileges:true
+    #     volumes:
+    #         - /:/rootfs:ro
+    #         - /var/run/docker.sock:/var/run/docker.sock:ro
+    #         - /var/run:/var/run:rw
+    #         - /sys:/sys:ro
+    #         - /var/lib/docker/:/var/lib/docker:ro
+    #         - /sys/fs/cgroup:/cgroup:ro
+    #         - /dev/disk/:/dev/disk:ro
+    #     devices:
+    #         - /dev/kmsg:/dev/kmsg
+    #     command:
+    #         - '-housekeeping_interval=10s'
+    #         - '-docker_only=true'
+    #         - '-allow_dynamic_housekeeping=false'
 
     node-exporter:
         image: prom/node-exporter:latest
