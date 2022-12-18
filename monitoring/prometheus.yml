@@ -41,7 +41,7 @@ scrape_configs:
       - cadvisor:8080
   - job_name: 'node_exporter'
     static_configs:
-    - targets: ['node-exporter:9100', '10.3.0.173:9100', '10.3.0.20:9100']
+    - targets: ['node-exporter:9100', '10.3.0.20:9100']
   - job_name: 'kong'
     static_configs:
     - targets: ['kong:8001']
