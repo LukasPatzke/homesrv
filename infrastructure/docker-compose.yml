@@ -9,7 +9,7 @@ volumes:
 
 services:
     portainer:
-        image: portainer/portainer-ce
+        image: portainer/portainer-ee
         restart: always
         container_name: portainer
         volumes:
