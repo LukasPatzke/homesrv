@@ -83,7 +83,7 @@ services:
             - "traefik.http.services.traefikmetrics.loadbalancer.server.port=8082"
 
             # local ips
-            - "traefik.http.middlewares.local-ip.ipwhitelist.sourcerange=172.16.0.0/12, 192.168.0.0/16, 10.2.0.0/16"
+            - "traefik.http.middlewares.local-ip.ipwhitelist.sourcerange=172.16.0.0/12, 192.168.0.0/16, 10.2.0.0/16,  10.1.0.0/16"
         extra_hosts:
             - host.docker.internal:172.21.0.1
 
