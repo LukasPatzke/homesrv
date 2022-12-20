@@ -146,7 +146,9 @@ services:
             - "traefik.docker.network=proxy"
             - "traefik.http.routers.speedtest.rule=Host(`speedtest.l3s.io`)"
             - "traefik.http.routers.speedtest.entrypoints=websecure"
-            - "traefik.http.routers.speedtest.middlewares=local-ip"
+            - "traefik.http.routers.speedtest.middlewares=local-ip, limit"
+            # Set request body size for traefik https://github.com/openspeedtest/Speed-Test/issues/4
+            - "traefik.http.middlewares.limit.buffering.maxRequestBodyBytes=10000000000"
         
 networks:
     proxy:
