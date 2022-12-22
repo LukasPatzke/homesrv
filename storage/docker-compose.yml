@@ -1,0 +1,51 @@
+version: "3.7"
+
+volumes:
+    minio:
+
+services:
+    minio:
+        image: minio/minio:RELEASE.2022-12-12T19-27-27Z
+        container_name: minio
+        restart: always
+        networks:
+            - proxy
+        volumes:
+            - minio:/data
+        command: server /data --console-address ":9001"
+        expose:
+            - 9000
+        healthcheck:
+            test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+            interval: 15s
+            timeout: 20s
+            retries: 5
+        environment:
+            - MINIO_ROOT_USER=admin
+            - MINIO_ROOT_PASSWORD=$MINIO_ROOT_PASSWORD
+            - MINIO_PROMETHEUS_AUTH_TYPE=public
+            - MINIO_PROMETHEUS_URL=https://prometheus.l3s.io
+            - MINIO_PROMETHEUS_JOB_ID=minio
+
+            - MINIO_IDENTITY_OPENID_CONFIG_URL=https://auth.l3s.io/realms/l3s/.well-known/openid-configuration
+            - MINIO_IDENTITY_OPENID_CLIENT_ID=minio
+            - MINIO_IDENTITY_OPENID_CLIENT_SECRET=$MINIO_IDENTITY_OPENID_CLIENT_SECRET
+            - MINIO_IDENTITY_OPENID_CLAIM_NAME=policy
+            - MINIO_IDENTITY_OPENID_SCOPES=openid,profile,email
+            - MINIO_IDENTITY_OPENID_REDIRECT_URI=https://minio.l3s.io/oauth_callback
+        labels:
+            - "traefik.enable=true"
+            - "traefik.docker.network=proxy"
+            - "traefik.http.routers.minio.rule=Host(`minio.l3s.io`)"
+            - "traefik.http.routers.minio.entrypoints=websecure"
+            - "traefik.http.routers.minio.service=minio"
+            - "traefik.http.services.minio.loadbalancer.server.port=9001"
+
+            - "traefik.http.routers.minio-storage.rule=Host(`s3.l3s.io`)"
+            - "traefik.http.routers.minio-storage.entrypoints=websecure"
+            - "traefik.http.routers.minio-storage.service=minio-storage"
+            - "traefik.http.services.minio-storage.loadbalancer.server.port=9000"
+
+networks:
+    proxy:
+        external: true
