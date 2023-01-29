@@ -21,7 +21,7 @@ services:
       - db:/var/lib/mysql 
     
   memcached:
-    image: memcached:1.5.6
+    image: memcached:1.6
     container_name: seafile-memcached
     restart: unless-stopped
     networks:
@@ -48,7 +48,7 @@ services:
     
     
   seafile:
-    image: docker.seadrive.org/seafileltd/seafile-pro-mc:9.0.4
+    image: docker.seadrive.org/seafileltd/seafile-pro-mc:9.0.7
     restart: unless-stopped
     container_name: seafile
     volumes:
