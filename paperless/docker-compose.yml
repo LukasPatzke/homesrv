@@ -9,7 +9,7 @@ volumes:
 
 services:
   broker:
-    image: redis:6.0
+    image: redis:7
     restart: unless-stopped
 
   db:
@@ -24,7 +24,7 @@ services:
       POSTGRES_PASSWORD: $POSTGRES_PASSWORD
 
   webserver:
-    image: jonaswinkler/paperless-ng:1.5.0
+    image: paperlessngx/paperless-ngx
     restart: unless-stopped
     depends_on:
       - db
@@ -51,19 +51,12 @@ services:
       PAPERLESS_TIME_ZONE: Europe/Berlin
       PAPERLESS_OCR_LANGUAGE: deu
       PAPERLESS_SECRET_KEY: $PAPERLESS_SECRET_KEY
-      PAPERLESS_ENABLE_HTTP_REMOTE_USER: "true"
-      PAPERLESS_HTTP_REMOTE_USER_HEADER_NAME: HTTP_X_FORWARDED_USER
-      PAPERLESS_LOGOUT_REDIRECT_URL: "https://auth.l3s.io/auth/realms/l3s/protocol/openid-connect/logout?redirect_uri=https%3A%2F%2Fforward.auth.l3s.io%2F_oauth%2Flogout"
+      PAPERLESS_URL: https://paperless.l3s.io
     labels: 
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
       - "traefik.http.routers.paperless.rule=Host(`paperless.l3s.io`)"
       - "traefik.http.routers.paperless.entrypoints=websecure"
-      - "traefik.http.routers.paperless.middlewares=auth"
-
-      - "traefik.http.routers.paperless-api.rule=Host(`paperless-api.l3s.io`)"
-      - "traefik.http.routers.paperless-api.entrypoints=websecure"
-      - "traefik.http.routers.paperless-api.middlewares=local-ip"
 
   sftp:
     image: atmoz/sftp
