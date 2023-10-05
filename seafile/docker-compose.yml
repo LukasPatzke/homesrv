@@ -48,7 +48,7 @@ services:
     
     
   seafile:
-    image: docker.seadrive.org/seafileltd/seafile-pro-mc:9.0.7
+    image: docker.seadrive.org/seafileltd/seafile-pro-mc:9.0.14
     restart: unless-stopped
     container_name: seafile
     volumes:
@@ -76,6 +76,7 @@ services:
       - "traefik.http.routers.seafile.rule=Host(`seafile.l3s.io`)"
       - "traefik.http.routers.seafile.entrypoints=websecure"
       - "traefik.http.routers.seafile.service=seafile"
+      - "traefik.http.routers.seafile.middlewares=redirect-sso"
      
       - "traefik.http.services.seafile.loadbalancer.server.port=80"
 
@@ -84,6 +85,9 @@ services:
       - "traefik.http.routers.seafdav.service=seafdav"
      
       - "traefik.http.services.seafdav.loadbalancer.server.port=8080"
+
+      - "traefik.http.middlewares.redirect-sso.redirectregex.regex=https://seafile.l3s.io/accounts/login/(.*)"
+      - "traefik.http.middlewares.redirect-sso.redirectregex.replacement=https://seafile.l3s.io/sso/$${1}"
 
 
   onlyoffice-document-server:
@@ -96,7 +100,6 @@ services:
     volumes:
       - document_data:/var/www/onlyoffice/Data
       - document_log:/var/log/onlyoffice
-      - ./fonts:/usr/share/fonts
       # - ./onlyoffice/local-production-linux.json:/etc/onlyoffice/documentserver/local-production-linux.js
     environment:
       - JWT_ENABLED=true
