@@ -127,7 +127,7 @@ services:
         environment:
             - TZ=Europe/Berlin
             - DB_CONN=sqlite:////data/db.sqlite
-            - SIGNOUT_REDIRECT_URL=https://auth.l3s.io/auth/realms/l3s/protocol/openid-connect/logout?redirect_uri=https%3A%2F%2Fforward.auth.l3s.io%2F_oauth%2Flogout
+            - SIGNOUT_REDIRECT_URL=https://auth.l3s.io/realms/l3s/protocol/openid-connect/logout
         labels: 
             - "traefik.enable=true"
             - "traefik.docker.network=proxy"
