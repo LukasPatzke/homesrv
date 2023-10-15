@@ -2,9 +2,7 @@ version: "3.7"
 
 volumes:
     portainer:
-    heimdall:
     homepage:
-    diun:
     unifi:
 
 services:
@@ -59,62 +57,6 @@ services:
             - "traefik.http.services.unifi-controller.loadbalancer.server.port=8443"
             - "traefik.http.services.unifi-controller.loadbalancer.server.scheme=https"
             - "traefik.http.services.unifi-controller.loadbalancer.serverstransport=insecure@file"
-            
-
-    diun:
-        image: crazymax/diun:latest
-        container_name: diun
-        restart: always
-        command: serve
-        volumes:
-            - "diun:/data"
-            - "/var/run/docker.sock:/var/run/docker.sock"
-        environment:
-            - "TZ=Europe/Berlin"
-            - "LOG_LEVEL=info"
-            - "LOG_JSON=false"
-            - "DIUN_WATCH_WORKERS=20"
-            - "DIUN_WATCH_SCHEDULE=0 */6 * * *"
-            - "DIUN_PROVIDERS_DOCKER=true"
-            - "DIUN_PROVIDERS_DOCKER_WATCHBYDEFAULT=true"
-            - "DIUN_NOTIF_DISCORD_WEBHOOKURL=$DIUN_NOTIF_DISCORD_WEBHOOKURL"
-        
-    watchtower:
-        image: containrrr/watchtower
-        restart: always
-        container_name: watchtower
-        environment: 
-            - WATCHTOWER_MONITOR_ONLY=true
-            - WATCHTOWER_NOTIFICATION_EMAIL_FROM=Watchtower
-            - WATCHTOWER_NOTIFICATION_EMAIL_TO=lukas@patzke.me
-            - WATCHTOWER_NOTIFICATION_EMAIL_SERVER=hosted.mailcow.de
-            - WATCHTOWER_NOTIFICATION_EMAIL_SERVER_PORT=465
-            - WATCHTOWER_NOTIFICATION_EMAIL_SERVER_USER=watchtower@patzke.me
-            - WATCHTOWER_NOTIFICATION_EMAIL_SERVER_PASSWORD=$WATCHTOWER_NOTIFICATION_EMAIL_SERVER_PASSWORD
-        volumes:
-            - /var/run/docker.sock:/var/run/docker.sock
-            - /etc/timezone:/etc/timezone:ro
-        command: --schedule "0 0 3 * * *"
-
-    heimdall:
-        image: linuxserver/heimdall
-        container_name: heimdall
-        restart: unless-stopped
-        networks: 
-            - proxy
-        environment:
-            - PUID=1000
-            - PGID=1000
-            - TZ=Europe/Berlin
-        volumes:
-            - heimdall:/config
-        labels: 
-            - "traefik.enable=true"
-            - "traefik.docker.network=proxy"
-            - "traefik.http.routers.heimdall.rule=Host(`heimdall.l3s.io`)"
-            - "traefik.http.services.heimdall.loadbalancer.server.port=80"
-            - "traefik.http.routers.heimdall.entrypoints=websecure"
-            - "traefik.http.routers.heimdall.middlewares=auth"
     
     homepage:
         image: lukaspatzke/homepage:edge
