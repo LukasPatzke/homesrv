@@ -1,0 +1,109 @@
+version: "3.7"
+
+volumes:
+    monitoring_loki:
+        name: monitoring_loki
+        external: true
+
+services:
+    read:
+        image: grafana/loki:2.6.1
+        container_name: loki_read
+        restart: always
+        command: "-config.file=/etc/loki/config.yaml -config.expand-env=true -target=read"
+        volumes:
+            - ./loki-config.yaml:/etc/loki/config.yaml
+            - monitoring_loki:/filesystem_data
+        healthcheck:
+            test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1" ]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        expose:
+            - 7946
+            - 9095
+        networks:
+            default:
+                aliases:
+                    - loki
+            proxy:
+        environment:
+            - MINIO_ACCESS_KEY=$MINIO_ACCESS_KEY
+            - MINIO_SECRET_KEY=$MINIO_SECRET_KEY
+        labels:
+            - "traefik.enable=true"
+            - "traefik.docker.network=proxy"
+            - "traefik.http.routers.loki-read.rule=Host(`loki.l3s.io`) && (PathPrefix(`/loki/api/`) || PathPrefix(`/api/prom/`))"
+            - "traefik.http.routers.loki-read.entrypoints=websecure"
+            - "traefik.http.routers.loki-read.service=loki-read"
+            - "traefik.http.routers.loki-read.middlewares=local-ip"
+            - "traefik.http.services.loki-read.loadbalancer.server.port=3100"
+            
+
+    write:
+        image: grafana/loki:2.6.1
+        container_name: loki_write
+        restart: always
+        command: "-config.file=/etc/loki/config.yaml -config.expand-env=true -target=write"
+        volumes:
+            - ./loki-config.yaml:/etc/loki/config.yaml
+            - monitoring_loki:/filesystem_data
+        healthcheck:
+            test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1" ]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        expose:
+            - 7946
+            - 9095
+        networks:
+            default:
+                aliases:
+                    - loki
+            proxy:
+        environment:
+            - MINIO_ACCESS_KEY=$MINIO_ACCESS_KEY
+            - MINIO_SECRET_KEY=$MINIO_SECRET_KEY
+        labels:
+            - "traefik.enable=true"
+            - "traefik.docker.network=proxy"
+            - "traefik.http.routers.loki-write.rule=Host(`loki.l3s.io`) && (PathPrefix(`/loki/api/v1/push`) || PathPrefix(`/api/prom/push`))"
+            - "traefik.http.routers.loki-write.entrypoints=websecure"
+            - "traefik.http.routers.loki-write.service=loki-write"
+            - "traefik.http.routers.loki-write.middlewares=local-ip"
+            - "traefik.http.services.loki-write.loadbalancer.server.port=3100"
+
+    promtail:
+        image: grafana/promtail:2.2.1
+        container_name: promtail
+        restart: always
+        networks:
+            - default
+        expose:
+            - 1514
+        volumes:
+            - ./promtail.yml:/etc/promtail/promtail.yml
+        command: -config.file=/etc/promtail/promtail.yml
+
+    syslog-ng:
+        image: balabit/syslog-ng:latest
+        container_name: syslog-ng
+        restart: always
+        networks:
+            - default
+        ports:
+            - 514:514
+            - 514:514/udp
+            - 601:601
+        command:
+            # - --no-caps
+            - --stderr
+        cap_add:
+            - CAP_SYSLOG
+        volumes:
+            - ./syslog-ng.conf:/etc/syslog-ng/syslog-ng.conf
+
+networks:
+    proxy:
+        external: true
+    default:
