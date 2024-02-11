@@ -17,6 +17,8 @@ services:
     environment:
       - MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD 
       - MYSQL_LOG_CONSOLE=true
+      # https://github.com/go-gitea/gitea/issues/25970#issuecomment-1641025026
+      - MARIADB_AUTO_UPGRADE=true
     volumes:
       - db:/var/lib/mysql 
     
