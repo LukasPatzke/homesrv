@@ -7,13 +7,6 @@ memberlist:
     - loki:7946
 schema_config:
   configs:
-    - from: 2018-04-15
-      store: boltdb
-      object_store: filesystem
-      schema: v11
-      index:
-        prefix: index_
-        period: 168h
     - from: 2022-12-23
       store: boltdb-shipper
       object_store: s3
@@ -25,9 +18,6 @@ schema_config:
 storage_config:
   boltdb:
     directory: /filesystem_data/index
-
-  filesystem:
-    directory: /filesystem_data/chunks
 
 common:
   path_prefix: /loki
