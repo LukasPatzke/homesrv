@@ -25,8 +25,8 @@ services:
             - KC_DB_SCHEMA=public
             - KC_DB_URL_DATABASE=keycloak
 
-            - KC_HOSTNAME=auth.l3s.io
-            - KC_PROXY=edge
+            - KC_HOSTNAME=https://auth.l3s.io
+            - KC_PROXY_HEADERS=xforwarded
             - KC_HTTP_ENABLED=true
         volumes: 
             - ./primer-keycloak-theme/:/opt/keycloak/themes/primer
