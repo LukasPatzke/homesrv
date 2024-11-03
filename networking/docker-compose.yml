@@ -61,8 +61,6 @@ services:
             - "--certificatesresolvers.letsencrypt.acme.dnschallenge.resolvers=213.251.188.146:53"
             - "--certificatesresolvers.letsencrypt.acme.email=lukas@patzke.me"
             - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
-            # Pilot
-            - "--pilot.token=${TRAEFIK_PILOT_TOKEN}"
         labels:
             - "traefik.enable=true"
             - "traefik.http.routers.traefik.entrypoints=websecure"
