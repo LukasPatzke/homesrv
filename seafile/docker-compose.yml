@@ -51,7 +51,7 @@ services:
     
     
   seafile:
-    image: docker.seadrive.org/seafileltd/seafile-pro-mc:10.0.9
+    image: docker.seadrive.org/seafileltd/seafile-pro-mc:11.0-latest
     restart: unless-stopped
     container_name: seafile
     volumes:
