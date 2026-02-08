@@ -1,38 +1,38 @@
 ---
 auth_enabled: false
 server:
-  http_listen_port: 3100
+    http_listen_port: 3100
 memberlist:
-  join_members:
-    - loki:7946
+    join_members:
+        - loki:7946
 schema_config:
-  configs:
-    - from: 2022-12-23
-      store: boltdb-shipper
-      object_store: s3
-      schema: v11
-      index:
-        prefix: index_
-        period: 24h
+    configs:
+        - from: 2022-12-23
+          store: boltdb-shipper
+          object_store: s3
+          schema: v11
+          index:
+              prefix: index_
+              period: 24h
 
 storage_config:
-  boltdb:
-    directory: /filesystem_data/index
+    boltdb:
+        directory: /filesystem_data/index
 
 common:
-  path_prefix: /loki
-  replication_factor: 1
-  storage:
-    s3:
-      endpoint: s3.l3s.io
-      bucketnames: loki-data
-      access_key_id: ${MINIO_ACCESS_KEY}
-      secret_access_key: ${MINIO_SECRET_KEY}
-      s3forcepathstyle: true
-  ring:
-    kvstore:
-      store: memberlist
+    path_prefix: /loki
+    replication_factor: 1
+    storage:
+        s3:
+            endpoint: s3.l3s.patzke.me
+            bucketnames: loki-data
+            access_key_id: ${MINIO_ACCESS_KEY}
+            secret_access_key: ${MINIO_SECRET_KEY}
+            s3forcepathstyle: true
+    ring:
+        kvstore:
+            store: memberlist
 ruler:
-  storage:
-    s3:
-      bucketnames: loki-ruler
+    storage:
+        s3:
+            bucketnames: loki-ruler

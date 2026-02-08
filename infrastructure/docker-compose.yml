@@ -1,5 +1,3 @@
-version: "3.7"
-
 volumes:
     portainer:
     homepage:
@@ -11,36 +9,36 @@ services:
         restart: always
         container_name: portainer
         volumes:
-            - '/var/run/docker.sock:/var/run/docker.sock'
-            - 'portainer:/data'
+            - "/var/run/docker.sock:/var/run/docker.sock"
+            - "portainer:/data"
         ports:
             - 9000:9000
-        networks: 
+        networks:
             - proxy
-        labels: 
+        labels:
             - "traefik.enable=true"
             - "traefik.docker.network=proxy"
-            - "traefik.http.routers.portainer.rule=Host(`portainer.l3s.io`)"
+            - "traefik.http.routers.portainer.rule=Host(`portainer.l3s.patzke.me`)"
             - "traefik.http.services.portainer.loadbalancer.server.port=9000"
             - "traefik.http.routers.portainer.entrypoints=websecure"
             - "traefik.http.routers.portainer.middlewares=auth"
-    
+
     homepage:
         image: lukaspatzke/homepage:edge
         container_name: homepage
         restart: always
-        networks: 
+        networks:
             - proxy
         volumes:
             - homepage:/data
         environment:
             - TZ=Europe/Berlin
             - DB_CONN=sqlite:////data/db.sqlite
-            - SIGNOUT_REDIRECT_URL=https://auth.l3s.io/realms/l3s/protocol/openid-connect/logout
-        labels: 
+            - SIGNOUT_REDIRECT_URL=https://auth.l3s.patzke.me/realms/l3s/protocol/openid-connect/logout
+        labels:
             - "traefik.enable=true"
             - "traefik.docker.network=proxy"
-            - "traefik.http.routers.homepage.rule=Host(`l3s.io`)"
+            - "traefik.http.routers.homepage.rule=Host(`l3s.patzke.me`)"
             - "traefik.http.routers.homepage.entrypoints=websecure"
             - "traefik.http.routers.homepage.middlewares=auth"
 
@@ -48,17 +46,17 @@ services:
         image: openspeedtest/latest
         container_name: speedtest
         restart: unless-stopped
-        networks: 
+        networks:
             - proxy
-        labels: 
+        labels:
             - "traefik.enable=true"
             - "traefik.docker.network=proxy"
-            - "traefik.http.routers.speedtest.rule=Host(`speedtest.l3s.io`)"
+            - "traefik.http.routers.speedtest.rule=Host(`speedtest.l3s.patzke.me`)"
             - "traefik.http.routers.speedtest.entrypoints=websecure"
             - "traefik.http.routers.speedtest.middlewares=local-ip, limit"
             # Set request body size for traefik https://github.com/openspeedtest/Speed-Test/issues/4
             - "traefik.http.middlewares.limit.buffering.maxRequestBodyBytes=10000000000"
-        
+
 networks:
     proxy:
         external: true

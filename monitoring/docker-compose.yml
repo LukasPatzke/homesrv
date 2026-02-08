@@ -2,12 +2,12 @@ version: "3.7"
 
 volumes:
     grafana:
-    prometheus: 
+    prometheus:
     loki:
-        
+
 services:
     grafana:
-        image: grafana/grafana:9.0.7
+        image: grafana/grafana:10.1.4
         container_name: grafana
         restart: always
         user: "1000"
@@ -17,16 +17,15 @@ services:
         volumes:
             - grafana:/var/lib/grafana
         environment:
-            GF_SERVER_ROOT_URL: https://grafana.l3s.io/
-            GF_SERVER_DOMAIN: grafana.l3s.io
+            GF_SERVER_ROOT_URL: https://grafana.l3s.patzke.me/
+            GF_SERVER_DOMAIN: grafana.l3s.patzke.me
             GF_SESSION_COOKIE_SECURE: "true"
             GF_USERS_AUTO_ASSIGN_ORG: "true"
             GF_AUTH_ANONYMOUS_ENABLED: "false"
             GF_AUTH_BASIC_ENABLED: "false"
             GF_AUTH_PROXY_ENABLED: "false"
-            GF_AUTH_PROXY_HEADER_NAME: "X-Forwarded-User"
-            GF_AUTH_PROXY_HEADER_PROPERTY: email
-            GF_AUTH_PROXY_AUTO_SIGN_UP: "true"
+            GF_AUTH_OAUTH_AUTO_LOGIN: "true"
+            GF_AUTH_OAUTH_ALLOW_INSECURE_EMAIL_LOOKUP: "true"
             GF_AUTH_GENERIC_OAUTH_ENABLED: "true"
             GF_AUTH_GENERIC_OAUTH_ALLOW_SIGN_UP: "true"
             GF_AUTH_GENERIC_OAUTH_NAME: "Keycloak"
@@ -34,19 +33,24 @@ services:
             GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET: $GRAFANA_CLIENT_SECRET
             GF_AUTH_GENERIC_OAUTH_SCOPES: openid profile email roles
             GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_STRICT: "true"
-            GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH: contains(resource_access.grafana.roles[*],
+            GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH:
+                contains(resource_access.grafana.roles[*],
                 'grafana_admin') && 'Admin' ||
                 contains(resource_access.grafana.roles[*], 'grafana_editor') && 'Editor' ||
                 contains(resource_access.grafana.roles[*], 'grafana_viewer') &&
                 'Viewer'
-            GF_AUTH_GENERIC_OAUTH_AUTH_URL: "https://auth.l3s.io/realms/l3s/protocol/o\
-                penid-connect/auth"
-            GF_AUTH_GENERIC_OAUTH_TOKEN_URL: "https://auth.l3s.io/realms/l3s/protocol/\
+            GF_AUTH_GENERIC_OAUTH_AUTH_URL:
+                "https://auth.l3s.patzke.me/realms/l3s/protocol/\
+                openid-connect/auth"
+            GF_AUTH_GENERIC_OAUTH_TOKEN_URL:
+                "https://auth.l3s.patzke.me/realms/l3s/protocol/\
                 openid-connect/token"
-            GF_AUTH_GENERIC_OAUTH_API_URL: "https://auth.l3s.io/realms/l3s/protocol/op\
-                enid-connect/userinfo"
-            GF_AUTH_SIGNOUT_REDIRECT_URL: "https://auth.l3s.io/realms/l3s/protocol/ope\
-                nid-connect/logout?redirect_uri=https%3A%2F%2Fgrafana.l3s.io"
+            GF_AUTH_GENERIC_OAUTH_API_URL:
+                "https://auth.l3s.patzke.me/realms/l3s/protocol/\
+                openid-connect/userinfo"
+            GF_AUTH_SIGNOUT_REDIRECT_URL:
+                "https://auth.l3s.patzke.me/realms/l3s/protocol/\
+                openid-connect/logout"
             GF_SMTP_ENABLED: "true"
             GF_SMTP_HOST: hosted.mailcow.de:465
             GF_SMTP_USER: grafana@patzke.me
@@ -56,16 +60,20 @@ services:
             GF_RENDERING_CALLBACK_URL: http://grafana:3000/
             GF_LOG_FILTERS: rendering:debug
             GF_PANELS_DISABLE_SANITIZE_HTML: "true"
-            GF_INSTALL_PLUGINS: "https://github.com/LukasPatzke/grafana-direction-panel/rel\
+            GF_INSTALL_PLUGINS:
+                "https://github.com/LukasPatzke/grafana-direction-panel/rel\
                 eases/download/v1.0.0/lukaspatzke-direction-panel-1.0.0.zip;luk\
                 aspatzke-direction-panel"
             GF_UNIFIED_ALERTING_ENABLED: "true"
+            GF_UNIFIED_ALERTING_SCREENSHOTS_CAPTURE: "true"
+            GF_UNIFIED_ALERTING_SCREENSHOTS_UPLOAD_EXTERNAL_IMAGE_STORAGE: "true"
+            GF_EXTERNAL_IMAGE_STORAGE: "local"
             GF_ALERTING_ENABLED: "false"
 
         labels:
             - "traefik.enable=true"
             - "traefik.docker.network=proxy"
-            - "traefik.http.routers.grafana.rule=Host(`grafana.l3s.io`)"
+            - "traefik.http.routers.grafana.rule=Host(`grafana.l3s.patzke.me`)"
             - "traefik.http.routers.grafana.entrypoints=websecure"
             - "diun.watch_repo=true"
             - "diun.include_tags=latest"
@@ -75,10 +83,10 @@ services:
         container_name: grafana-renderer
         restart: always
         environment:
-            ENABLE_METRICS: 'true'
+            ENABLE_METRICS: "true"
 
     prometheus:
-        image: prom/prometheus:v2.37.0
+        image: prom/prometheus:v2.40.7
         container_name: prometheus
         restart: always
         networks:
@@ -88,16 +96,16 @@ services:
             - prometheus:/prometheus
             - ./prometheus.yml:/etc/prometheus/prometheus.yml
         command:
-            - '--config.file=/etc/prometheus/prometheus.yml'
-            - '--storage.tsdb.retention.time=60d'
-            - '--web.enable-admin-api'
-            - '--enable-feature=promql-negative-offset'
+            - "--config.file=/etc/prometheus/prometheus.yml"
+            - "--storage.tsdb.retention.time=60d"
+            - "--web.enable-admin-api"
+            - "--enable-feature=promql-negative-offset"
         labels:
             - "traefik.enable=true"
             - "traefik.docker.network=proxy"
-            - "traefik.http.routers.prometheus.rule=Host(`prometheus.l3s.io`)"
+            - "traefik.http.routers.prometheus.rule=Host(`prometheus.l3s.patzke.me`)"
             - "traefik.http.routers.prometheus.entrypoints=websecure"
-            - "traefik.http.routers.prometheus.middlewares=auth"
+            - "traefik.http.routers.prometheus.middlewares=local-ip"
             - "diun.watch_repo=true"
             - "diun.include_tags=latest"
 
@@ -137,12 +145,12 @@ services:
             - /sys:/host/sys:ro
             - /:/rootfs:ro
         command:
-            - '--path.procfs=/host/proc'
-            - '--path.sysfs=/host/sys'
-            - '--path.rootfs=/rootfs'
+            - "--path.procfs=/host/proc"
+            - "--path.sysfs=/host/sys"
+            - "--path.rootfs=/rootfs"
             - '--collector.filesystem.mount-points-exclude="^(/rootfs|/host|)/(sys|proc|dev|host|etc)($$|/)"'
             - '--collector.filesystem.fs-types-exclude="^(sys|proc|auto|cgroup|devpts|ns|au|fuse\.lxc|mqueue)(fs|)$$"'
-            - '--collector.powersupplyclass'
+            - "--collector.powersupplyclass"
 
     snmp-exporter:
         image: prom/snmp-exporter
@@ -151,61 +159,7 @@ services:
         networks:
             - default
         volumes:
-          - ./snmp_exporter:/etc/snmp_exporter
-
-    loki:
-        image: grafana/loki:2.3.0
-        container_name: loki
-        restart: always
-        ports:
-            - 127.0.0.1:3100:3100
-        networks:
-            - default
-            - proxy
-        volumes:
-            - /etc/localtime:/etc/localtime:ro
-            - /etc/timezone:/etc/timezone:ro
-            - loki:/loki
-            - ./loki.yml:/etc/loki/loki.yml
-        command:
-            - '-config.file=/etc/loki/loki.yml'
-            - '-config.expand-env=true'
-        environment:
-            - LOKI_ACCESS_KEY_ID=$LOKI_ACCESS_KEY_ID
-            - LOKI_ACCESS_KEY_SECRET=$LOKI_ACCESS_KEY_SECRET
-        labels:
-            - "diun.watch_repo=true"
-            - "diun.include_tags=latest"
-
-    promtail:
-        image: grafana/promtail:2.2.1
-        container_name: promtail
-        restart: always
-        networks:
-            - default
-        expose:
-            - 1514
-        volumes:
-            - ./promtail.yml:/etc/promtail/promtail.yml
-        command: -config.file=/etc/promtail/promtail.yml
-
-    syslog-ng:
-        image: balabit/syslog-ng:latest
-        container_name: syslog-ng
-        restart: always
-        networks:
-            - default
-        ports:
-            - 514:514
-            - 514:514/udp
-            - 601:601
-        command:
-            # - --no-caps
-            - --stderr
-        cap_add:
-            - CAP_SYSLOG
-        volumes:
-            - ./syslog-ng.conf:/etc/syslog-ng/syslog-ng.conf
+            - ./snmp_exporter:/etc/snmp_exporter
 
     unifi-poller:
         image: golift/unifi-poller:latest
@@ -224,9 +178,9 @@ services:
             UP_UNIFI_CONTROLLER_0_SAVE_EVENTS: "true"
             UP_UNIFI_CONTROLLER_0_SAVE_IDS: "true"
             UP_UNIFI_CONTROLLER_0_SAVE_SITES: "true"
-            UP_UNIFI_CONTROLLER_0_URL: https://controller.l3s.io
+            UP_UNIFI_CONTROLLER_0_URL: https://unifi.l3s.patzke.me
             UP_UNIFI_CONTROLLER_0_USER: lukas
-            UP_LOKI_URL: http://loki:3100
+            UP_LOKI_URL: https://loki.l3s.patzke.me
 
 networks:
     proxy:

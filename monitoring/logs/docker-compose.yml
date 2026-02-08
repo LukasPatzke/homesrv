@@ -9,7 +9,11 @@ services:
         volumes:
             - ./loki-config.yaml:/etc/loki/config.yaml
         healthcheck:
-            test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1" ]
+            test:
+                [
+                    "CMD-SHELL",
+                    "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1",
+                ]
             interval: 10s
             timeout: 5s
             retries: 5
@@ -27,12 +31,11 @@ services:
         labels:
             - "traefik.enable=true"
             - "traefik.docker.network=proxy"
-            - "traefik.http.routers.loki-read.rule=Host(`loki.l3s.io`) && (PathPrefix(`/loki/api/`) || PathPrefix(`/api/prom/`))"
+            - "traefik.http.routers.loki-read.rule=Host(`loki.l3s.patzke.me`) && (PathPrefix(`/loki/api/`) || PathPrefix(`/api/prom/`))"
             - "traefik.http.routers.loki-read.entrypoints=websecure"
             - "traefik.http.routers.loki-read.service=loki-read"
             - "traefik.http.routers.loki-read.middlewares=local-ip"
             - "traefik.http.services.loki-read.loadbalancer.server.port=3100"
-            
 
     write:
         image: grafana/loki:2.6.1
@@ -42,7 +45,11 @@ services:
         volumes:
             - ./loki-config.yaml:/etc/loki/config.yaml
         healthcheck:
-            test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1" ]
+            test:
+                [
+                    "CMD-SHELL",
+                    "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1",
+                ]
             interval: 10s
             timeout: 5s
             retries: 5
@@ -60,7 +67,7 @@ services:
         labels:
             - "traefik.enable=true"
             - "traefik.docker.network=proxy"
-            - "traefik.http.routers.loki-write.rule=Host(`loki.l3s.io`) && (PathPrefix(`/loki/api/v1/push`) || PathPrefix(`/api/prom/push`))"
+            - "traefik.http.routers.loki-write.rule=Host(`loki.l3s.patzke.me`) && (PathPrefix(`/loki/api/v1/push`) || PathPrefix(`/api/prom/push`))"
             - "traefik.http.routers.loki-write.entrypoints=websecure"
             - "traefik.http.routers.loki-write.service=loki-write"
             - "traefik.http.routers.loki-write.middlewares=local-ip"

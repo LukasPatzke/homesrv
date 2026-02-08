@@ -1,76 +1,111 @@
-version: "3.4"
-
 volumes:
-  data:
-  media:
-  pgdata:
-  consume:
-
+    data:
+    media:
+    pgdata:
+    pgdata_17:
+    consume:
+    protonmail:
 
 services:
-  broker:
-    image: redis:7
-    restart: unless-stopped
+    broker:
+        image: redis:7
+        restart: unless-stopped
 
-  db:
-    image: postgres:13
-    restart: unless-stopped
-    container_name: paperless-db
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    environment:
-      POSTGRES_DB: paperless
-      POSTGRES_USER: paperless
-      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+    db:
+        image: postgres:17
+        restart: unless-stopped
+        container_name: paperless-db
+        volumes:
+            - pgdata_17:/var/lib/postgresql/data
+        environment:
+            POSTGRES_DB: paperless
+            POSTGRES_USER: paperless
+            POSTGRES_PASSWORD: $POSTGRES_PASSWORD
 
-  webserver:
-    image: paperlessngx/paperless-ngx
-    restart: unless-stopped
-    depends_on:
-      - db
-      - broker
-    networks: 
-      - default
-      - proxy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    volumes:
-      - data:/usr/src/paperless/data
-      - media:/usr/src/paperless/media
-      - ./export:/usr/src/paperless/export
-      - consume:/usr/src/paperless/consume
-    environment:
-      PAPERLESS_REDIS: redis://broker:6379
-      PAPERLESS_DBHOST: db
-      PAPERLESS_DBPASS: $POSTGRES_PASSWORD
-      USERMAP_UID: 1000
-      USERMAP_GID: 1000
-      PAPERLESS_TIME_ZONE: Europe/Berlin
-      PAPERLESS_OCR_LANGUAGE: deu
-      PAPERLESS_SECRET_KEY: $PAPERLESS_SECRET_KEY
-      PAPERLESS_URL: https://paperless.l3s.io
-    labels: 
-      - "traefik.enable=true"
-      - "traefik.docker.network=proxy"
-      - "traefik.http.routers.paperless.rule=Host(`paperless.l3s.io`)"
-      - "traefik.http.routers.paperless.entrypoints=websecure"
+    webserver:
+        image: paperlessngx/paperless-ngx
+        restart: unless-stopped
+        depends_on:
+            - db
+            - broker
+        networks:
+            - default
+            - proxy
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:8000"]
+            interval: 30s
+            timeout: 10s
+            retries: 5
+        volumes:
+            - data:/usr/src/paperless/data
+            - media:/usr/src/paperless/media
+            - ./export:/usr/src/paperless/export
+            - consume:/usr/src/paperless/consume
+        environment:
+            PAPERLESS_REDIS: redis://broker:6379
+            PAPERLESS_DBHOST: db
+            PAPERLESS_DBPASS: $POSTGRES_PASSWORD
+            USERMAP_UID: 1000
+            USERMAP_GID: 1000
+            PAPERLESS_TIME_ZONE: Europe/Berlin
+            PAPERLESS_OCR_LANGUAGE: deu
+            PAPERLESS_SECRET_KEY: $PAPERLESS_SECRET_KEY
+            PAPERLESS_URL: https://paperless.l3s.patzke.me
+            PAPERLESS_APPS: allauth.socialaccount.providers.openid_connect
+            PAPERLESS_SOCIALACCOUNT_ALLOW_SIGNUPS: false
+            PAPERLESS_REDIRECT_LOGIN_TO_SSO: true
+            PAPERLESS_SOCIALACCOUNT_PROVIDERS: >
+                {
+                    "openid_connect": {
+                        "APPS": [
+                            {
+                                "provider_id": "keycloak",
+                                "name": "Keycloak",
+                                "client_id": "$CLIENT_ID",
+                                "secret": "$CLIENT_SECRET",
+                                "settings": {
+                                    "server_url": "https://auth.l3s.patzke.me/realms/l3s/.well-known/openid-configuration"
+                                }
+                            }
+                        ]
+                    }
+                }
+        labels:
+            - "traefik.enable=true"
+            - "traefik.docker.network=proxy"
+            - "traefik.http.routers.paperless.rule=Host(`paperless.l3s.patzke.me`)"
+            - "traefik.http.routers.paperless.entrypoints=websecure"
 
-  sftp:
-    image: atmoz/sftp
-    restart: unless-stopped
-    ports:
-      - "2222:22"
-    volumes:
-      - /etc/ssh/ssh_host_ed25519_key:/etc/ssh/ssh_host_ed25519_key
-      - /etc/ssh/ssh_host_rsa_key:/etc/ssh/ssh_host_rsa_key
-      - consume:/home/lukas/consume
-    environment: 
-      SFTP_USERS: $SFTP_USERS
+    sftp:
+        image: atmoz/sftp
+        restart: unless-stopped
+        ports:
+            - "2222:22"
+        volumes:
+            - /etc/ssh/ssh_host_ed25519_key:/etc/ssh/ssh_host_ed25519_key
+            - /etc/ssh/ssh_host_rsa_key:/etc/ssh/ssh_host_rsa_key
+            - consume:/home/lukas/consume
+        environment:
+            SFTP_USERS: $SFTP_USERS
+    protonmail-bridge:
+        image: shenxn/protonmail-bridge
+        ports:
+            - 1025:25/tcp
+            - 1143:143/tcp
+        restart: unless-stopped
+        networks:
+            - default
+            - proxy
+        volumes:
+            - protonmail:/root
+        labels:
+            - "traefik.enable=true"
+            - "traefik.docker.network=proxy"
+            - "traefik.http.routers.protonmail.rule=Host(`protonmail.l3s.patzke.me`)"
+            - "traefik.http.services.protonmail.loadbalancer.server.port=143"
+            - "traefik.http.routers.protonmail.entrypoints=websecure"
 
-networks: 
+networks:
     proxy:
         external: true
     default:

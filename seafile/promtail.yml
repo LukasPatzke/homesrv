@@ -1,19 +1,18 @@
-
 clients:
-  - url: http://loki:3100/loki/api/v1/push
+    - url: https://loki.l3s.patzke.me/loki/api/v1/push
 
 scrape_configs:
-  - job_name: seafile
-    static_configs:
-      - targets:
-          - localhost
-        labels:
-          app: seafile
-          __path__: /shared/seafile/logs/*.log
-          host: srv
-      - targets:
-          - localhost
-        labels:
-          app: onlyoffice
-          __path__: /document_log/**/*.log
-          host: srv
+    - job_name: seafile
+      static_configs:
+          - targets:
+                - localhost
+            labels:
+                app: seafile
+                __path__: /shared/seafile/logs/*.log
+                host: srv
+          - targets:
+                - localhost
+            labels:
+                app: onlyoffice
+                __path__: /document_log/**/*.log
+                host: srv

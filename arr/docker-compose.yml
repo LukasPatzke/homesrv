@@ -1,0 +1,198 @@
+services:
+    prowlarr:
+        image: lscr.io/linuxserver/prowlarr:latest
+        container_name: prowlarr
+        environment:
+            - PUID=${PUID}
+            - PGID=${PGID}
+            - TZ=${TZ}
+        volumes:
+            - ${CONFIG_BASE_PATH}/prowlarr/config:/config
+            - ${CONFIG_BASE_PATH}/prowlarr/backup:/data/Backup
+            - ${DOWNLOADS_PATH}:/data/downloads
+        restart: unless-stopped
+        network_mode: "service:gluetun"
+        depends_on:
+            - gluetun
+    radarr:
+        image: lscr.io/linuxserver/radarr:latest
+        container_name: radarr
+        environment:
+            - PUID=${PUID}
+            - PGID=${PGID}
+            - TZ=${TZ}
+        volumes:
+            - ${CONFIG_BASE_PATH}/radarr/config:/config
+            - ${MOVIE_LIBRARY_PATH}:/data/movies
+            - ${DOWNLOADS_PATH}:/data/downloads
+            - ${CONFIG_BASE_PATH}/radarr/backup:/data/Backup
+        restart: unless-stopped
+        network_mode: "service:gluetun"
+        depends_on:
+            - gluetun
+            - sabnzbd
+    sonarr:
+        image: lscr.io/linuxserver/sonarr:latest
+        container_name: sonarr
+        environment:
+            - PUID=${PUID}
+            - PGID=${PGID}
+            - TZ=${TZ}
+        volumes:
+            - ${CONFIG_BASE_PATH}/sonarr/config:/config
+            - ${CONFIG_BASE_PATH}/sonarr/backup:/data/Backup
+            - ${SERIES_LIBRARY_PATH}:/data/tvshows
+            - ${DOWNLOADS_PATH}:/data/downloads
+        restart: unless-stopped
+        network_mode: "service:gluetun"
+        depends_on:
+            - gluetun
+            - sabnzbd
+    sabnzbd:
+        image: lscr.io/linuxserver/sabnzbd
+        container_name: sabnzbd
+        environment:
+            - PUID=${PUID}
+            - PGID=${PGID}
+            - TZ=${TZ}
+        volumes:
+            - ${CONFIG_BASE_PATH}/sabnzbd/config:/config
+            - ${DOWNLOADS_PATH}:/data/downloads
+            - ${DOWNLOADS_PATH}/incomplete:/data/incomplete-downloads" # "temp" directory for downloads
+        restart: unless-stopped
+        network_mode: "service:gluetun"
+        depends_on:
+            - gluetun
+    # qbittorrent:
+    #     image: lscr.io/linuxserver/qbittorrent:latest
+    #     container_name: qbittorrent
+    #     environment:
+    #         - PUID=${PUID}
+    #         - PGID=${PGID}
+    #         - TZ=${TZ}
+    #         - WEBUI_PORT=8080
+    #         - TORRENTING_PORT=6881
+    #     volumes:
+    #         - ${CONFIG_BASE_PATH}/qbit/config:/config
+    #         - ${DOWNLOADS_PATH}:/downloads #optional
+    #     network_mode: "service:gluetun"
+    #     depends_on:
+    #         - gluetun
+    #     restart: unless-stopped
+    flaresolverr:
+        # DockerHub mirror flaresolverr/flaresolverr:latest
+        image: flaresolverr/flaresolverr:latest
+        container_name: flaresolverr
+        environment:
+            - LOG_LEVEL=${LOG_LEVEL:-info}
+            - LOG_HTML=${LOG_HTML:-false}
+            - CAPTCHA_SOLVER=${CAPTCHA_SOLVER:-none}
+            - TZ=${TZ}
+        network_mode: "service:gluetun"
+        depends_on:
+            - gluetun
+        restart: unless-stopped
+    jellyfin:
+        image: lscr.io/linuxserver/jellyfin:latest
+        container_name: jellyfin
+        environment:
+            - PUID=${PUID}
+            - PGID=${PGID}
+            - TZ=${TZ}
+            - JELLYFIN_PublishedServerUrl=https://jellyfin.l3s.patzke.me #optional
+        volumes:
+            - ${CONFIG_BASE_PATH}/jellyfin/config:/config
+            - ${SERIES_LIBRARY_PATH}:/data/tvshows
+            - ${MOVIE_LIBRARY_PATH}:/data/movies
+        devices:
+            - /dev/dri:/dev/dri
+        restart: unless-stopped
+        networks:
+            - proxy
+        labels:
+            - traefik.enable=true
+            - traefik.networks=proxy
+            - traefik.http.routers.jellyfin.rule=Host(`jellyfin.l3s.patzke.me`)
+            - traefik.http.routers.jellyfin.entrypoints=websecure,public
+            - traefik.http.routers.jellyfin.service=jellyfin
+            - traefik.http.services.jellyfin.loadbalancer.server.port=8096
+    jellyseerr:
+        image: fallenbagel/jellyseerr:latest
+        container_name: jellyseerr
+        environment:
+            - LOG_LEVEL=debug
+            - TZ=${TZ}
+        volumes:
+            - ${CONFIG_BASE_PATH}/jellyseerr/config:/app/config
+        restart: unless-stopped
+        networks:
+            - proxy
+        labels:
+            - traefik.enable=true
+            - traefik.networks=proxy
+            - traefik.http.routers.jellyseerr.rule=Host(`jellyseerr.l3s.patzke.me`)
+            - traefik.http.routers.jellyseerr.entrypoints=websecure,public
+            - traefik.http.routers.jellyseerr.service=jellyseerr
+            - traefik.http.services.jellyseerr.loadbalancer.server.port=5055
+    gluetun:
+        image: qmcgaw/gluetun
+        container_name: gluetun
+        cap_add:
+            - NET_ADMIN
+        devices:
+            - /dev/net/tun:/dev/net/tun
+        restart: unless-stopped
+        networks:
+            - proxy
+        environment: # Follow the wiki and add missing stuff and remove stuff which is not needed: https://github.com/qdm12/gluetun-wiki/tree/main/setup/providers
+            - VPN_SERVICE_PROVIDER=protonvpn # Change your provider according to your vpn provider.
+            # NOTE: THIS EXAMPLE IS FOR SURFSHARK YOUR VPN CONFIGURATION WILL DIFFER!!
+            - VPN_TYPE=wireguard
+            - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
+            - SERVER_COUNTRIES=
+            - FIREWALL_OUTBOUND_SUBNETS=172.17.0.0/16,192.168.0.0/16
+        # ports:
+        # - 8989:8989 #sonarr
+        # - 7878:7878 #radarr
+        # - 9696:9696 #prowlarr
+        # # - 8080:8080 #qbit
+        # # - 6881:6881 #qbit
+        # # - 6881:6881/udp #qbit
+        # - 8191:8191 #flaresolver
+        # - 8096:8096 #jellyfin
+        # - 8920:8920 #optional jellyfin
+        # - 7359:7359/udp #optional jellyfin
+        # - 1900:1900/udp #optional jellyfin
+        # - 5055:5055 #jellyseerr
+        labels:
+            - traefik.enable=true
+            - traefik.networks=proxy
+
+            - traefik.http.routers.sonarr.rule=Host(`sonarr.l3s.patzke.me`)
+            - traefik.http.routers.sonarr.entrypoints=websecure
+            - traefik.http.routers.sonarr.service=sonarr
+            - traefik.http.services.sonarr.loadbalancer.server.port=8989
+
+            - traefik.http.routers.radarr.rule=Host(`radarr.l3s.patzke.me`)
+            - traefik.http.routers.radarr.entrypoints=websecure
+            - traefik.http.routers.radarr.service=radarr
+            - traefik.http.services.radarr.loadbalancer.server.port=7878
+
+            - traefik.http.routers.prowlarr.rule=Host(`prowlarr.l3s.patzke.me`)
+            - traefik.http.routers.prowlarr.entrypoints=websecure
+            - traefik.http.routers.prowlarr.service=prowlarr
+            - traefik.http.services.prowlarr.loadbalancer.server.port=9696
+
+            # - traefik.http.routers.qbittorrent.rule=Host(`qbittorrent.l3s.patzke.me`)
+            # - traefik.http.routers.qbittorrent.entrypoints=websecure
+            # - traefik.http.services.qbittorrent.loadbalancer.server.port=8080
+
+            - traefik.http.routers.sabnzbd.rule=Host(`sabnzbd.l3s.patzke.me`)
+            - traefik.http.routers.sabnzbd.entrypoints=websecure
+            - traefik.http.routers.sabnzbd.service=sabnzbd
+            - traefik.http.services.sabnzbd.loadbalancer.server.port=8080
+
+networks:
+    proxy:
+        external: true
+    default:

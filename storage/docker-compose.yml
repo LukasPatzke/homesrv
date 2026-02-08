@@ -1,5 +1,3 @@
-version: "3.7"
-
 volumes:
     minio:
 
@@ -16,34 +14,36 @@ services:
         expose:
             - 9000
         healthcheck:
-            test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+            test:
+                ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
             interval: 15s
             timeout: 20s
             retries: 5
         environment:
             - MINIO_ROOT_USER=admin
             - MINIO_ROOT_PASSWORD=$MINIO_ROOT_PASSWORD
-            - MINIO_PROMETHEUS_AUTH_TYPE=public
-            - MINIO_PROMETHEUS_URL=https://prometheus.l3s.io
-            - MINIO_PROMETHEUS_JOB_ID=minio
+            # - MINIO_PROMETHEUS_AUTH_TYPE=public
+            # - MINIO_PROMETHEUS_URL=https://prometheus.l3s.patzke.me
+            # - MINIO_PROMETHEUS_JOB_ID=minio
+            - MINIO_IDENTITY_OPENID_ENABLE=off
 
-            - MINIO_IDENTITY_OPENID_CONFIG_URL_KEYCLOAK_IAM=https://auth.l3s.io/realms/l3s/.well-known/openid-configuration
-            - MINIO_IDENTITY_OPENID_CLIENT_ID_KEYCLOAK_IAM=minio
-            - MINIO_IDENTITY_OPENID_CLIENT_SECRET_KEYCLOAK_IAM=$MINIO_IDENTITY_OPENID_CLIENT_SECRET
-            - MINIO_IDENTITY_OPENID_CLAIM_NAME_KEYCLOAK_IAM=policy
-            - MINIO_IDENTITY_OPENID_SCOPES_KEYCLOAK_IAM=openid,profile,email
-            - MINIO_IDENTITY_OPENID_DISPLAY_NAME_KEYCLOAK_IAM=Keykloak
-            - MINIO_IDENTITY_OPENID_REDIRECT_URI_DYNAMIC_KEYCLOAK_IAM="on"
-            - MINIO_BROWSER_REDIRECT_URL=minio.l3s.io
+            # - MINIO_IDENTITY_OPENID_CONFIG_URL_KEYCLOAK_IAM=https://auth.l3s.patzke.me/realms/l3s/.well-known/openid-configuration
+            # - MINIO_IDENTITY_OPENID_CLIENT_ID_KEYCLOAK_IAM=minio
+            # - MINIO_IDENTITY_OPENID_CLIENT_SECRET_KEYCLOAK_IAM=$MINIO_IDENTITY_OPENID_CLIENT_SECRET
+            # - MINIO_IDENTITY_OPENID_CLAIM_NAME_KEYCLOAK_IAM=policy
+            # - MINIO_IDENTITY_OPENID_SCOPES_KEYCLOAK_IAM=openid,profile,email
+            # - MINIO_IDENTITY_OPENID_DISPLAY_NAME_KEYCLOAK_IAM=Keykloak
+            # - MINIO_IDENTITY_OPENID_REDIRECT_URI_DYNAMIC_KEYCLOAK_IAM="on"
+            # - MINIO_BROWSER_REDIRECT_URL=https://minio.l3s.patzke.me
         labels:
             - "traefik.enable=true"
             - "traefik.docker.network=proxy"
-            - "traefik.http.routers.minio.rule=Host(`minio.l3s.io`)"
+            - "traefik.http.routers.minio.rule=Host(`minio.l3s.patzke.me`)"
             - "traefik.http.routers.minio.entrypoints=websecure"
             - "traefik.http.routers.minio.service=minio"
             - "traefik.http.services.minio.loadbalancer.server.port=9001"
 
-            - "traefik.http.routers.minio-storage.rule=Host(`s3.l3s.io`)"
+            - "traefik.http.routers.minio-storage.rule=Host(`s3.l3s.patzke.me`)"
             - "traefik.http.routers.minio-storage.entrypoints=websecure"
             - "traefik.http.routers.minio-storage.service=minio-storage"
             - "traefik.http.services.minio-storage.loadbalancer.server.port=9000"

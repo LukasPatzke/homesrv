@@ -24,8 +24,8 @@ Because the UDM starts with a clean slate on each boot, we have to use UDM-Utili
 
 cat > /run/dnsmasq.conf.d/local_custom_dns.conf <<- "EOF"
 # Created by a UDM-Utilities run script
-address=/unifi.l3s.io/192.168.1.1
-address=/l3s.io/sso.l3s.io/10.1.0.2
+address=/unifi.l3s.patzke.me/192.168.1.1
+address=/l3s.patzke.me/sso.l3s.patzke.me/10.1.0.2
 EOF
 
 # Restart dnsmasq so it sees the new conf file

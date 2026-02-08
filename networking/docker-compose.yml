@@ -1,9 +1,7 @@
-version: "3.7"
-
 volumes:
     ssl:
 
-services: 
+services:
     traefik:
         image: traefik
         container_name: traefik
@@ -14,21 +12,25 @@ services:
             - 127.0.0.1:8000:8000
             - 1883:1883
             - 8883:8883
-        networks: 
+            - 5432:5432
+            - 8443:8443
+        networks:
             - proxy
         volumes:
             - /var/run/docker.sock:/var/run/docker.sock:ro
             - ssl:/letsencrypt
             - ./traefik:/traefik
-        environment: 
+        environment:
             - OVH_ENDPOINT=ovh-eu
             - OVH_APPLICATION_KEY=$OVH_AK
             - OVH_APPLICATION_SECRET=$OVH_AS
             - OVH_CONSUMER_KEY=$OVH_CK
-        command: 
+        command:
             # logs
-            #- "--log.level=DEBUG"
-            #- "--accesslog=true"
+            - "--log.level=INFO"
+            - "--log.format=json"
+            - "--accesslog=true"
+            - "--accesslog.format=json"
             # metrics
             - "--metrics.prometheus=true"
             - "--entryPoints.metrics.address=:8082"
@@ -49,22 +51,30 @@ services:
             - "--entrypoints.websecure.address=:443"
             - "--entrypoints.websecure.http.tls.certresolver=letsencrypt"
             - "--entrypoints.websecure.http.tls.options=modern@file"
+            # public https entrypoint
+            - "--entrypoints.public.address=:8443"
+            - "--entrypoints.public.http.tls.certresolver=letsencrypt"
+            - "--entrypoints.public.http.tls.options=modern@file"
+            # postgres entrypoint
+            - "--entrypoints.postgres.address=:5432"
+            - "--entrypoints.postgres.http.tls.certresolver=letsencrypt"
+            # - "--entrypoints.postgres.http.tls.options=modern@file"
             # local api http entrypoint
             - "--entrypoints.local-api.address=:8000"
             # mqtt entrypoint
-            - "--entrypoints.mqtt.address=:1883"
-            - "--entrypoints.mqtts.address=:8883"
+            # - "--entrypoints.mqtt.address=:1883"
+            # - "--entrypoints.mqtts.address=:8883"
             # letsencrypt cert resolver
             - "--certificatesresolvers.letsencrypt.acme.dnschallenge=true"
             - "--certificatesresolvers.letsencrypt.acme.dnschallenge.provider=ovh"
             # - "--certificatesresolvers.letsencrypt.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
-            - "--certificatesresolvers.letsencrypt.acme.dnschallenge.resolvers=213.251.188.146:53"
+            - "--certificatesresolvers.letsencrypt.acme.dnschallenge.resolvers=5.135.85.109:53"
             - "--certificatesresolvers.letsencrypt.acme.email=lukas@patzke.me"
             - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
         labels:
             - "traefik.enable=true"
             - "traefik.http.routers.traefik.entrypoints=websecure"
-            - "traefik.http.routers.traefik.rule=Host(`traefik.l3s.io`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
+            - "traefik.http.routers.traefik.rule=Host(`traefik.l3s.patzke.me`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
             - "traefik.http.routers.traefik.service=api@internal"
             - "traefik.http.routers.traefik.middlewares=auth"
 
@@ -73,7 +83,7 @@ services:
             - "traefik.http.routers.local-api.service=api@internal"
 
             - "traefik.http.routers.traefikmetrics.entrypoints=websecure"
-            - "traefik.http.routers.traefikmetrics.rule=Host(`traefik.l3s.io`) && PathPrefix(`/metrics`)"
+            - "traefik.http.routers.traefikmetrics.rule=Host(`traefik.l3s.patzke.me`) && PathPrefix(`/metrics`)"
             - "traefik.http.routers.traefikmetrics.service=traefikmetrics"
             - "traefik.http.routers.traefik.middlewares=local-ip"
             - "traefik.http.services.traefikmetrics.loadbalancer.server.port=8082"
@@ -87,23 +97,23 @@ services:
         image: thomseddon/traefik-forward-auth:2
         restart: always
         container_name: forward-auth
-        networks: 
+        networks:
             - proxy
-        environment: 
+        environment:
             - PROVIDERS_OIDC_CLIENT_ID=forward-auth
             - PROVIDERS_OIDC_CLIENT_SECRET=$KEYCLOAK_CLIENT_SECRET
-            - PROVIDERS_OIDC_ISSUER_URL=https://auth.l3s.io/realms/l3s
+            - PROVIDERS_OIDC_ISSUER_URL=https://auth.l3s.patzke.me/realms/l3s
             - DEFAULT_PROVIDER=oidc
             - SECRET=$COOKIE_SECRET
-            - AUTH_HOST=forward.auth.l3s.io
-            - COOKIE_DOMAIN=l3s.io
+            - AUTH_HOST=forward.auth.l3s.patzke.me
+            - COOKIE_DOMAIN=l3s.patzke.me
             - LIFETIME=3600
             - LOG_LEVEL=debug
             - TZ=Europe/Berlin
-            - LOGOUT_REDIRECT=https://l3s.io
+            - LOGOUT_REDIRECT=https://l3s.patzke.me
         labels:
             - "traefik.enable=true"
-            - "traefik.http.routers.forward-auth.rule=Host(`forward.auth.l3s.io`)"
+            - "traefik.http.routers.forward-auth.rule=Host(`forward.auth.l3s.patzke.me`)"
             - "traefik.http.routers.forward-auth.entrypoints=websecure"
             - "traefik.http.services.traefik-forward-auth.loadbalancer.server.port=4181"
             - "traefik.http.routers.forward-auth.middlewares=auth"

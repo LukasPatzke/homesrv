@@ -10,7 +10,7 @@ Download and unzip the release https://github.com/camptocamp/bivac/releases. Cop
 ## Login
 
 ```sh
-$ export BIVAC_REMOTE_ADDRESS=https://bivac.l3s.io
+$ export BIVAC_REMOTE_ADDRESS=https://bivac.l3s.patzke.me
 $ export BIVAC_SERVER_PSK=<PSK>
 ```
 

@@ -1,78 +1,78 @@
 # my global config
 global:
-  scrape_interval:     15s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
-  evaluation_interval: 15s # Evaluate rules every 15 seconds. The default is every 1 minute.
-  # scrape_timeout is set to the global default (10s).
-  
+    scrape_interval: 15s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
+    evaluation_interval: 15s # Evaluate rules every 15 seconds. The default is every 1 minute.
+    # scrape_timeout is set to the global default (10s).
+
 # Alertmanager configuration
 alerting:
-  alertmanagers:
-  - static_configs:
-    - targets:
-      # - alertmanager:9093
+    alertmanagers:
+        - static_configs:
+              - targets:
+                # - alertmanager:9093
 
 # Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
 rule_files:
-  # - "first_rules.yml"
-  # - "second_rules.yml"
+    # - "first_rules.yml"
+    # - "second_rules.yml"
 
 # A scrape configuration containing exactly one endpoint to scrape:
 # Here it's Prometheus itself.
 scrape_configs:
-  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
-  - job_name: 'prometheus'
-    # metrics_path defaults to '/metrics'
-    # scheme defaults to 'http'.
-    static_configs:
-    - targets: ['localhost:9090']
-  - job_name: 'grafana'
-    static_configs:
-    - targets: ['grafana:3000']
-  - job_name: 'keycloak'
-    static_configs:
-    - targets: ['auth.l3s.io']
-  - job_name: 'traefik'
-    scheme: https
-    static_configs:
-    - targets: ['traefik.l3s.io', 'traefik.nas.l3s.io']
-  - job_name: cadvisor
-    static_configs:
-    - targets:
-      - cadvisor:8080
-  - job_name: 'node_exporter'
-    static_configs:
-    - targets: ['node-exporter:9100', '10.3.0.20:9100']
-  - job_name: 'kong'
-    static_configs:
-    - targets: ['kong:8001']
-  - job_name: 'loki'
-    static_configs:
-    - targets: ['loki:3100']
-  - job_name: 'unifipoller'
-    scrape_interval: 30s
-    static_configs:
-    - targets: ['unifi-poller:9130']
-  - job_name: 'minio'
-    metrics_path: /minio/v2/metrics/cluster
-    scheme: https
-    static_configs:
-    - targets: ['s3.l3s.io']
-  - job_name: 'dump1090'
-    scrape_interval: 10s
-    scrape_timeout: 5s
-    static_configs:
-      - targets: ['10.3.0.20:3001']
-  - job_name: 'snmp'
-    static_configs:
-      - targets:
-        - nas.l3s.io # SNMP device.
-    metrics_path: /snmp
-    params:
-      module: [synology]
-    relabel_configs:
-      - source_labels: [__address__]
-        target_label: __param_target
-      - source_labels: [__param_target]
-        target_label: instance
-      - target_label: __address__
-        replacement: snmp-exporter:9116  # The SNMP exporter's real hostname:port.
+    # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+    - job_name: "prometheus"
+      # metrics_path defaults to '/metrics'
+      # scheme defaults to 'http'.
+      static_configs:
+          - targets: ["localhost:9090"]
+    - job_name: "grafana"
+      static_configs:
+          - targets: ["grafana:3000"]
+    - job_name: "keycloak"
+      static_configs:
+          - targets: ["auth.l3s.patzke.me"]
+    - job_name: "traefik"
+      scheme: https
+      static_configs:
+          - targets: ["traefik.l3s.patzke.me", "traefik.nas.l3s.patzke.me"]
+    - job_name: cadvisor
+      static_configs:
+          - targets:
+                - cadvisor:8080
+    - job_name: "node_exporter"
+      static_configs:
+          - targets: ["node-exporter:9100", "10.3.0.20:9100"]
+    - job_name: "kong"
+      static_configs:
+          - targets: ["kong:8001"]
+    - job_name: "loki"
+      static_configs:
+          - targets: ["loki:3100", "loki_read:3100", "loki_write:3100"]
+    - job_name: "unifipoller"
+      scrape_interval: 30s
+      static_configs:
+          - targets: ["unifi-poller:9130"]
+    - job_name: "minio"
+      metrics_path: /minio/v2/metrics/cluster
+      scheme: https
+      static_configs:
+          - targets: ["s3.l3s.patzke.me"]
+    - job_name: "dump1090"
+      scrape_interval: 10s
+      scrape_timeout: 5s
+      static_configs:
+          - targets: ["10.3.0.20:3001"]
+    - job_name: "snmp"
+      static_configs:
+          - targets:
+                - nas.l3s.patzke.me # SNMP device.
+      metrics_path: /snmp
+      params:
+          module: [synology]
+      relabel_configs:
+          - source_labels: [__address__]
+            target_label: __param_target
+          - source_labels: [__param_target]
+            target_label: instance
+          - target_label: __address__
+            replacement: snmp-exporter:9116 # The SNMP exporter's real hostname:port.

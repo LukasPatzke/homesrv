@@ -1,0 +1,69 @@
+volumes:
+    pg_data:
+    pg_data_upload:
+
+services:
+    metabase:
+        image: metabase/metabase:latest
+        container_name: metabase
+        hostname: metabase
+        restart: unless-stopped
+        volumes:
+            - /dev/urandom:/dev/random:ro
+            - ./data:/data
+        environment:
+            MB_DB_TYPE: postgres
+            MB_DB_DBNAME: metabaseappdb
+            MB_DB_PORT: 5432
+            MB_DB_USER: metabase
+            MB_DB_PASS: $POSTGRES_PASSWORD
+            MB_DB_HOST: postgres
+        networks:
+            - default
+            - proxy
+        healthcheck:
+            test: curl --fail -I http://localhost:3000/api/health || exit 1
+            interval: 15s
+            timeout: 5s
+            retries: 5
+        labels:
+            - "traefik.enable=true"
+            - "traefik.docker.network=proxy"
+            - "traefik.http.routers.metabase.rule=Host(`metabase.l3s.patzke.me`)"
+            - "traefik.http.routers.metabase.entrypoints=websecure"
+    postgres:
+        image: postgres:16
+        container_name: postgres
+        hostname: postgres
+        restart: unless-stopped
+        environment:
+            POSTGRES_USER: metabase
+            POSTGRES_DB: metabaseappdb
+            POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+        volumes:
+            - pg_data:/var/lib/postgresql/data
+    upload_db:
+        image: postgres:16
+        container_name: upload_db
+        hostname: upload_db
+        restart: unless-stopped
+        networks:
+            - default
+            - proxy
+        environment:
+            POSTGRES_USER: metabase
+            POSTGRES_DB: metabaseuploaddb
+            POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+        volumes:
+            - pg_data_upload:/var/lib/postgresql/data
+        labels:
+            - traefik.enable=true
+            - traefik.tcp.routers.metabase-upload.rule=HostSNI(`upload.metabase.l3s.patzke.me`)
+            - traefik.tcp.routers.metabase-upload.tls=true
+            - traefik.tcp.services.metabase-upload.loadbalancer.server.port=5432
+            - traefik.tcp.routers.metabase-upload.entrypoints=postgres
+            - traefik.tcp.routers.metabase-upload.tls.certresolver=letsencrypt
+networks:
+    proxy:
+        external: true
+    default:

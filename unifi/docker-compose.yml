@@ -1,67 +1,64 @@
-version: "3.7"
-
 volumes:
-  controller:
-  db:
-
+    controller:
+    db:
 
 services:
-  db:
-    image: docker.io/mongo:4.4
-    container_name: unifi-db
-    volumes:
-      - db:/data/db
-      - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
-    restart: unless-stopped
-    # environment:
-      # - MONGO_INITDB_ROOT_USERNAME=root
-      # - MONGO_INITDB_ROOT_PASSWORD=$MONGO_ROOT_PASSWORD
-      # - MONGODB_USER=unifi
-      # - MONGODB_PASSWORD=$MONGO_PASSWORD
+    db:
+        image: docker.io/mongo:4.4
+        container_name: unifi-db
+        volumes:
+            - db:/data/db
+            - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+        restart: unless-stopped
+        # environment:
+        # - MONGO_INITDB_ROOT_USERNAME=root
+        # - MONGO_INITDB_ROOT_PASSWORD=$MONGO_ROOT_PASSWORD
+        # - MONGODB_USER=unifi
+        # - MONGODB_PASSWORD=$MONGO_PASSWORD
 
-  application:
-    image: lscr.io/linuxserver/unifi-network-application:latest
-    container_name: unifi-network-application
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/Berlin
-      - MONGO_USER=unifi
-      - MONGO_PASS=$MONGO_PASSWORD
-      - MONGO_HOST=db
-      - MONGO_PORT=27017
-      - MONGO_DBNAME=unifi
-      - MEM_LIMIT=1024 #optional
-      - MEM_STARTUP=1024 #optional
-      # - MONGO_TLS= #optional
-      # - MONGO_AUTHSOURCE= #optional
-    volumes:
-      - controller:/config
-    ports:
-      # - 8443:8443
-      - 3478:3478/udp
-      - 10001:10001/udp
-      - 8080:8080
-      - 1900:1900/udp #optional
-      # - 8843:8843 #optional
-      # - 8880:8880 #optional
-      - 6789:6789 #optional
-      - 5514:5514/udp #optional
-    networks:
-      - proxy
-      - default
-    restart: unless-stopped
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=proxy"
-      - "traefik.http.routers.unifi.rule=Host(`unifi.l3s.io`)"
-      - "traefik.http.routers.unifi.entrypoints=websecure"
-      - "traefik.http.routers.unifi.middlewares=local-ip"
-      - "traefik.http.routers.unifi.service=unifi"
-      - "traefik.http.services.unifi.loadbalancer.server.port=8443"
-      - "traefik.http.services.unifi.loadbalancer.server.scheme=https"
-      - "traefik.http.services.unifi.loadbalancer.serverstransport=insecure@file"
-        
+    application:
+        image: lscr.io/linuxserver/unifi-network-application:latest
+        container_name: unifi-network-application
+        environment:
+            - PUID=1000
+            - PGID=1000
+            - TZ=Europe/Berlin
+            - MONGO_USER=unifi
+            - MONGO_PASS=$MONGO_PASSWORD
+            - MONGO_HOST=db
+            - MONGO_PORT=27017
+            - MONGO_DBNAME=unifi
+            - MEM_LIMIT=1024 #optional
+            - MEM_STARTUP=1024 #optional
+            # - MONGO_TLS= #optional
+            # - MONGO_AUTHSOURCE= #optional
+        volumes:
+            - controller:/config
+        ports:
+            # - 8443:8443
+            - 3478:3478/udp
+            - 10001:10001/udp
+            - 8080:8080
+            - 1900:1900/udp #optional
+            # - 8843:8843 #optional
+            # - 8880:8880 #optional
+            - 6789:6789 #optional
+            - 5514:5514/udp #optional
+        networks:
+            - proxy
+            - default
+        restart: unless-stopped
+        labels:
+            - "traefik.enable=true"
+            - "traefik.docker.network=proxy"
+            - "traefik.http.routers.unifi.rule=Host(`unifi.l3s.patzke.me`)"
+            - "traefik.http.routers.unifi.entrypoints=websecure"
+            - "traefik.http.routers.unifi.middlewares=local-ip"
+            - "traefik.http.routers.unifi.service=unifi"
+            - "traefik.http.services.unifi.loadbalancer.server.port=8443"
+            - "traefik.http.services.unifi.loadbalancer.server.scheme=https"
+            - "traefik.http.services.unifi.loadbalancer.serverstransport=insecure@file"
+
 networks:
     proxy:
         external: true
